@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Settings, Wrench } from "lucide-react";
+import { Plus, Edit, Trash2, Settings, Wrench, Mail, CheckCircle, XCircle, Send, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,18 @@ export default function SettingsPage() {
   const [editItem, setEditItem] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", defaultDuration: "" });
+
+  // Email settings state
+  const [emailConfig, setEmailConfig] = useState({
+    smtpHost: "", smtpPort: "587", smtpSecure: false,
+    smtpUser: "", smtpPass: "", emailFrom: "", emailEnabled: false,
+  });
+  const [showPass, setShowPass] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [emailStatus, setEmailStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const fetchServiceTypes = async () => {
     setLoading(true);
@@ -58,6 +70,25 @@ export default function SettingsPage() {
     if (!confirm("Delete this service type?")) return;
     await fetch(`/api/service-types/${id}`, { method: "DELETE" });
     fetchServiceTypes();
+  };
+
+  const handleVerifySmtp = async () => {
+    setVerifying(true);
+    setEmailStatus(null);
+    const res = await fetch("/api/email/verify", { method: "POST" });
+    const data = await res.json();
+    setEmailStatus(res.ok ? { type: "success", msg: "SMTP connection verified successfully!" } : { type: "error", msg: data.error || "Connection failed" });
+    setVerifying(false);
+  };
+
+  const handleSendTest = async () => {
+    if (!testEmail) return;
+    setSending(true);
+    setEmailStatus(null);
+    const res = await fetch("/api/email/test", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: testEmail }) });
+    const data = await res.json();
+    setEmailStatus(res.ok ? { type: "success", msg: data.message || "Test email sent!" } : { type: "error", msg: data.error || "Failed to send" });
+    setSending(false);
   };
 
   return (
@@ -111,6 +142,90 @@ export default function SettingsPage() {
               </table>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Email / SMTP Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Mail className="h-4 w-4" /> Email Notifications (SMTP)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-gray-500">Configure SMTP to enable automatic email notifications for tickets, inspections, and invoices. Set <code className="bg-gray-100 px-1 rounded text-xs">EMAIL_ENABLED=true</code> in your <code className="bg-gray-100 px-1 rounded text-xs">.env</code> file to activate sending.</p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 md:col-span-1">
+              <Label>SMTP Host</Label>
+              <Input className="mt-1" placeholder="smtp.gmail.com" value={emailConfig.smtpHost}
+                onChange={e => setEmailConfig(c => ({ ...c, smtpHost: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Port</Label>
+              <Input className="mt-1" placeholder="587" value={emailConfig.smtpPort}
+                onChange={e => setEmailConfig(c => ({ ...c, smtpPort: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Username / Email</Label>
+              <Input className="mt-1" placeholder="you@gmail.com" value={emailConfig.smtpUser}
+                onChange={e => setEmailConfig(c => ({ ...c, smtpUser: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Password / App Password</Label>
+              <div className="relative mt-1">
+                <Input type={showPass ? "text" : "password"} placeholder="••••••••" value={emailConfig.smtpPass}
+                  onChange={e => setEmailConfig(c => ({ ...c, smtpPass: e.target.value }))} />
+                <button type="button" onClick={() => setShowPass(p => !p)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <Label>From Name / Email</Label>
+              <Input className="mt-1" placeholder="FireTicket <noreply@yourcompany.com>" value={emailConfig.emailFrom}
+                onChange={e => setEmailConfig(c => ({ ...c, emailFrom: e.target.value }))} />
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+            <strong>Note:</strong> These settings are read from environment variables at runtime. Update your <code className="bg-amber-100 px-1 rounded text-xs">.env</code> file with the values above and restart the server.
+            <div className="mt-2 font-mono text-xs space-y-0.5 text-amber-700">
+              {emailConfig.smtpHost && <div>SMTP_HOST="{emailConfig.smtpHost}"</div>}
+              {emailConfig.smtpPort && <div>SMTP_PORT="{emailConfig.smtpPort}"</div>}
+              {emailConfig.smtpUser && <div>SMTP_USER="{emailConfig.smtpUser}"</div>}
+              {emailConfig.smtpPass && <div>SMTP_PASS="{'*'.repeat(emailConfig.smtpPass.length)}"</div>}
+              {emailConfig.emailFrom && <div>EMAIL_FROM="{emailConfig.emailFrom}"</div>}
+              <div>EMAIL_ENABLED="true"</div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={handleVerifySmtp} disabled={verifying} className="gap-1.5">
+              <CheckCircle className="h-3.5 w-3.5" />{verifying ? "Testing..." : "Verify SMTP Connection"}
+            </Button>
+          </div>
+
+          <div className="border-t border-gray-100 pt-4">
+            <Label>Send Test Email</Label>
+            <div className="flex gap-2 mt-1">
+              <Input placeholder="recipient@example.com" value={testEmail} onChange={e => setTestEmail(e.target.value)} className="max-w-xs" />
+              <Button size="sm" onClick={handleSendTest} disabled={sending || !testEmail} className="gap-1.5">
+                <Send className="h-3.5 w-3.5" />{sending ? "Sending..." : "Send Test"}
+              </Button>
+            </div>
+          </div>
+
+          {emailStatus && (
+            <div className={`flex items-center gap-2 rounded-lg p-3 text-sm ${emailStatus.type === "success" ? "bg-green-50 border border-green-200 text-green-800" : "bg-red-50 border border-red-200 text-red-800"}`}>
+              {emailStatus.type === "success" ? <CheckCircle className="h-4 w-4 shrink-0" /> : <XCircle className="h-4 w-4 shrink-0" />}
+              {emailStatus.msg}
+            </div>
+          )}
+
+          <div className="text-xs text-gray-400 pt-1">
+            Notifications are sent automatically for: new tickets, ticket assignments, status changes, scheduled inspections, and new invoices.
+          </div>
         </CardContent>
       </Card>
 

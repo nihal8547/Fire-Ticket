@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { sendEmail } from "@/lib/email";
+import { ticketStatusChangedEmail, ticketAssignedEmail } from "@/lib/email-templates";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
@@ -72,6 +74,42 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       newValues: JSON.stringify(updateData),
     },
   });
+
+  // Email: status change notification to managers + customer
+  if (updateData.status && updateData.status !== old.status) {
+    const managers = await prisma.user.findMany({
+      where: { role: { in: ["ADMIN", "MANAGER"] }, isActive: true },
+      select: { email: true },
+    });
+    const recipients = managers.map(m => m.email!);
+    if (recipients.length > 0) {
+      const tpl = ticketStatusChangedEmail({
+        ticketNumber: ticket.ticketNumber,
+        title: ticket.title,
+        oldStatus: old.status,
+        newStatus: updateData.status,
+        customerName: ticket.customer?.name || "",
+        appUrl: process.env.NEXTAUTH_URL,
+      });
+      await sendEmail({ to: recipients, ...tpl });
+    }
+  }
+
+  // Email: new technician assignment notification
+  if (updateData.technicianId && updateData.technicianId !== old.technicianId) {
+    const tech = await prisma.user.findUnique({ where: { id: updateData.technicianId }, select: { email: true, name: true } });
+    if (tech?.email) {
+      const tpl = ticketAssignedEmail({
+        ticketNumber: ticket.ticketNumber,
+        title: ticket.title,
+        priority: ticket.priority,
+        customerName: ticket.customer?.name || "",
+        technicianName: tech.name || "",
+        appUrl: process.env.NEXTAUTH_URL,
+      });
+      await sendEmail({ to: tech.email, ...tpl });
+    }
+  }
 
   return NextResponse.json(ticket);
 }

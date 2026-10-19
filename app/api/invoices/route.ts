@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { generateInvoiceNumber } from "@/lib/utils";
+import { sendEmail } from "@/lib/email";
+import { invoiceCreatedEmail } from "@/lib/email-templates";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -59,6 +61,22 @@ export async function POST(req: NextRequest) {
     },
     include: { customer: { select: { id: true, name: true } }, items: true },
   });
+
+  // Email: notify managers of new invoice
+  const managers = await prisma.user.findMany({
+    where: { role: { in: ["ADMIN", "MANAGER"] }, isActive: true },
+    select: { email: true },
+  });
+  if (managers.length > 0) {
+    const tpl = invoiceCreatedEmail({
+      invoiceNumber: invoice.invoiceNumber,
+      customerName: invoice.customer?.name || "",
+      total: invoice.total,
+      dueDate: invoice.dueDate?.toLocaleDateString() || undefined,
+      appUrl: process.env.NEXTAUTH_URL,
+    });
+    await sendEmail({ to: managers.map(m => m.email!), ...tpl });
+  }
 
   return NextResponse.json(invoice, { status: 201 });
 }

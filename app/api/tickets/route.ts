@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { generateTicketNumber } from "@/lib/utils";
+import { sendEmail } from "@/lib/email";
+import { ticketCreatedEmail, ticketAssignedEmail } from "@/lib/email-templates";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -94,6 +96,40 @@ export async function POST(req: NextRequest) {
       newValues: JSON.stringify({ ticketNumber, title, priority }),
     },
   });
+
+  // Email: notify managers of new ticket
+  const managers = await prisma.user.findMany({
+    where: { role: { in: ["ADMIN", "MANAGER"] }, isActive: true },
+    select: { email: true },
+  });
+  if (managers.length > 0) {
+    const tpl = ticketCreatedEmail({
+      ticketNumber: ticket.ticketNumber,
+      title: ticket.title,
+      priority: ticket.priority,
+      customerName: ticket.customer?.name || "",
+      description: ticket.description || undefined,
+      appUrl: process.env.NEXTAUTH_URL,
+    });
+    await sendEmail({ to: managers.map(m => m.email!), ...tpl });
+  }
+
+  // Email: notify assigned technician
+  if (ticket.technician?.id) {
+    const tech = await prisma.user.findUnique({ where: { id: ticket.technician.id }, select: { email: true } });
+    if (tech?.email) {
+      const tpl = ticketAssignedEmail({
+        ticketNumber: ticket.ticketNumber,
+        title: ticket.title,
+        priority: ticket.priority,
+        customerName: ticket.customer?.name || "",
+        technicianName: ticket.technician.name || "",
+        scheduledDate: ticket.scheduledDate?.toLocaleDateString() || undefined,
+        appUrl: process.env.NEXTAUTH_URL,
+      });
+      await sendEmail({ to: tech.email, ...tpl });
+    }
+  }
 
   return NextResponse.json(ticket, { status: 201 });
 }

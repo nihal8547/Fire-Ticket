@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { generateInspectionNumber } from "@/lib/utils";
+import { sendEmail } from "@/lib/email";
+import { inspectionScheduledEmail } from "@/lib/email-templates";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -66,6 +68,23 @@ export async function POST(req: NextRequest) {
       customer: { select: { id: true, name: true } },
     },
   });
+
+  // Email: notify managers of new inspection
+  const managers = await prisma.user.findMany({
+    where: { role: { in: ["ADMIN", "MANAGER"] }, isActive: true },
+    select: { email: true },
+  });
+  if (managers.length > 0) {
+    const tpl = inspectionScheduledEmail({
+      inspectionNumber: inspection.inspectionNumber,
+      type: inspection.type,
+      customerName: inspection.customer?.name || "",
+      scheduledDate: inspection.scheduledDate?.toLocaleDateString() || undefined,
+      notes: inspection.notes || undefined,
+      appUrl: process.env.NEXTAUTH_URL,
+    });
+    await sendEmail({ to: managers.map(m => m.email!), ...tpl });
+  }
 
   return NextResponse.json(inspection, { status: 201 });
 }
