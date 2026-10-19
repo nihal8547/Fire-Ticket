@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fireticket-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fireticket
+      POSTGRES_PASSWORD: fireticket
+      POSTGRES_DB: fireticket
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fireticket -d fireticket"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fireticket-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://fireticket:fireticket@postgres:5432/fireticket
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-fire-ticket-secret-change-in-production}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      EMAIL_FROM: ${EMAIL_FROM:-FireTicket <noreply@fireticket.com>}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
