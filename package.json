@@ -55,10 +55,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:generate": "./node_modules/.bin/prisma generate",
-    "db:push": "./node_modules/.bin/prisma db push",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "./node_modules/.bin/prisma studio",
-    "postinstall": "./node_modules/.bin/prisma generate || exit 0"
+    "db:studio": "prisma studio",
+    "postinstall": "prisma generate"
   }
 }
