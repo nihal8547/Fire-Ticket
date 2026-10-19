@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 
@@ -32,8 +31,8 @@ export default function SchedulePage() {
     const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
 
     const [tRes, iRes] = await Promise.all([
-      fetch(`/api/tickets?limit=200&from=${startOfMonth}&to=${endOfMonth}`),
-      fetch(`/api/inspections?limit=200&from=${startOfMonth}&to=${endOfMonth}`),
+      fetch(`/api/tickets?limit=200&scheduledFrom=${startOfMonth}&scheduledTo=${endOfMonth}`),
+      fetch(`/api/inspections?limit=200&scheduledFrom=${startOfMonth}&scheduledTo=${endOfMonth}`),
     ]);
     const [tData, iData] = await Promise.all([tRes.json(), iRes.json()]);
     setTickets(tData.tickets || []);
