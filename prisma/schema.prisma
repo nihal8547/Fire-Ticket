@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  password      String
+  role          String    @default("TECHNICIAN") // ADMIN, MANAGER, TECHNICIAN, CUSTOMER
+  phone         String?
+  avatar        String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  assignedTickets  Ticket[]       @relation("TechnicianTickets")
+  comments         TicketComment[]
+  auditLogs        AuditLog[]
+  customerProfile  Customer?      @relation("CustomerUser")
+  notifications    Notification[]
+}
+
+model Customer {
+  id             String    @id @default(cuid())
+  name           String
+  email          String?   @unique
+  phone          String?
+  address        String?
+  city           String?
+  state          String?
+  zipCode        String?
+  contactPerson  String?
+  siteDetails    String?
+  notes          String?
+  isActive       Boolean   @default(true)
+  externalRef    String?   @unique // for Excel sync
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  userId         String?   @unique
+  user           User?     @relation("CustomerUser", fields: [userId], references: [id])
+
+  tickets        Ticket[]
+  assets         Asset[]
+  inspections    Inspection[]
+  invoices       Invoice[]
+}
+
+model ServiceType {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  description     String?
+  color           String   @default("#ef4444")
+  defaultDuration Int      @default(60)
+  price           Float    @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  tickets     Ticket[]
+  inspections Inspection[]
+}
+
+model Ticket {
+  id            String    @id @default(cuid())
+  ticketNumber  String    @unique
+  title         String
+  description   String?
+  status        String    @default("NEW") // NEW, ASSIGNED, IN_PROGRESS, PENDING_PARTS, RESOLVED, CLOSED
+  priority      String    @default("MEDIUM") // LOW, MEDIUM, HIGH, EMERGENCY
+  scheduledDate DateTime?
+  resolvedDate  DateTime?
+  dueDate       DateTime?
+  externalRef   String?   @unique // for Excel sync
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  customerId    String
+  customer      Customer  @relation(fields: [customerId], references: [id])
+
+  technicianId  String?
+  technician    User?     @relation("TechnicianTickets", fields: [technicianId], references: [id])
+
+  serviceTypeId String?
+  serviceType   ServiceType? @relation(fields: [serviceTypeId], references: [id])
+
+  comments      TicketComment[]
+  attachments   Attachment[]
+  auditLogs     AuditLog[]
+  invoiceItems  InvoiceItem[]
+  inspections   Inspection[]
+}
+
+model TicketComment {
+  id        String   @id @default(cuid())
+  content   String
+  isInternal Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  ticketId  String
+  ticket    Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+}
+
+model Attachment {
+  id          String   @id @default(cuid())
+  fileName    String
+  fileType    String
+  fileSize    Int
+  fileUrl     String
+  description String?
+  createdAt   DateTime @default(now())
+
+  ticketId    String
+  ticket      Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+model Asset {
+  id              String    @id @default(cuid())
+  name            String
+  assetType       String    // EXTINGUISHER, SPRINKLER, ALARM, PANEL, SUPPRESSION, OTHER
+  serialNumber    String?
+  manufacturer    String?
+  model           String?
+  installDate     DateTime?
+  lastServiceDate DateTime?
+  nextServiceDate DateTime?
+  location        String?
+  status          String    @default("ACTIVE") // ACTIVE, NEEDS_SERVICE, OUT_OF_SERVICE
+  notes           String?
+  externalRef     String?   @unique
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id])
+
+  inspectionItems InspectionItem[]
+}
+
+model Inspection {
+  id            String    @id @default(cuid())
+  inspectionNumber String @unique
+  type          String    // ANNUAL, QUARTERLY, MONTHLY, SPECIAL
+  scheduledDate DateTime?
+  completedDate DateTime?
+  status        String    @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, PASSED, FAILED, PENDING_REVIEW
+  overallResult String?   // PASS, FAIL, CONDITIONAL
+  notes         String?
+  certificate   String?
+  certExpiry    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  customerId    String
+  customer      Customer  @relation(fields: [customerId], references: [id])
+
+  ticketId      String?
+  ticket        Ticket?   @relation(fields: [ticketId], references: [id])
+
+  serviceTypeId String?
+  serviceType   ServiceType? @relation(fields: [serviceTypeId], references: [id])
+
+  items         InspectionItem[]
+}
+
+model InspectionItem {
+  id           String  @id @default(cuid())
+  description  String
+  result       String? // PASS, FAIL, N/A
+  notes        String?
+  order        Int     @default(0)
+
+  inspectionId String
+  inspection   Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  assetId      String?
+  asset        Asset?  @relation(fields: [assetId], references: [id])
+}
+
+model Invoice {
+  id            String    @id @default(cuid())
+  invoiceNumber String    @unique
+  status        String    @default("DRAFT") // DRAFT, SENT, PAID, PARTIAL, OVERDUE, CANCELLED
+  issueDate     DateTime  @default(now())
+  dueDate       DateTime?
+  paidDate      DateTime?
+  subtotal      Float     @default(0)
+  tax           Float     @default(0)
+  total         Float     @default(0)
+  paidAmount    Float     @default(0)
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  customerId    String
+  customer      Customer  @relation(fields: [customerId], references: [id])
+
+  items         InvoiceItem[]
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  description String
+  quantity    Float   @default(1)
+  unitPrice   Float
+  total       Float
+
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  ticketId    String?
+  ticket      Ticket? @relation(fields: [ticketId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO, WARNING, SUCCESS, ERROR
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  entity     String
+  entityId   String
+  oldValues  String?
+  newValues  String?
+  createdAt  DateTime @default(now())
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+
+  ticketId   String?
+  ticket     Ticket?  @relation(fields: [ticketId], references: [id])
+}
+
+model ExcelImportLog {
+  id          String   @id @default(cuid())
+  fileName    String
+  type        String   // CUSTOMERS, TICKETS
+  totalRows   Int
+  newRecords  Int
+  updated     Int
+  failed      Int
+  errors      String?
+  createdAt   DateTime @default(now())
+  createdBy   String
+}
