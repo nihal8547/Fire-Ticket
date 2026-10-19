@@ -4,3 +4,9 @@ node_modules/
 prisma/dev.db
 prisma/dev.db-journal
 *.tsbuildinfo
+
+# IDE and agent metadata
+.agents/
+.claude/
+.cursor/
+.devin/
