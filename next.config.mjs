@@ -2,7 +2,7 @@
 const nextConfig = {
   output: "standalone",
   experimental: {
-    serverComponentsExternalPackages: ["bcryptjs"],
+    serverComponentsExternalPackages: ["bcryptjs", "xlsx", "nodemailer"],
   },
 };
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/lib/utils";
@@ -35,12 +36,18 @@ export default function AssetsPage() {
 
   const fetchAssets = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams({ search });
-    if (statusFilter !== "ALL") params.set("status", statusFilter);
-    const res = await fetch(`/api/assets?${params}`);
-    const data = await res.json();
-    setAssets(Array.isArray(data) ? data : []);
-    setLoading(false);
+    try {
+      const params = new URLSearchParams({ search });
+      if (statusFilter !== "ALL") params.set("status", statusFilter);
+      const res = await fetch(`/api/assets?${params}`);
+      const data = res.ok ? await res.json().catch(() => []) : [];
+      setAssets(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("Failed to fetch assets:", e);
+      setAssets([]);
+    } finally {
+      setLoading(false);
+    }
   }, [search, statusFilter]);
 
   useEffect(() => {
@@ -49,7 +56,10 @@ export default function AssetsPage() {
   }, [fetchAssets]);
 
   useEffect(() => {
-    fetch("/api/customers?limit=100").then(r => r.json()).then(d => setCustomers(d.customers || []));
+    fetch("/api/customers?limit=100")
+      .then(r => r.ok ? r.json() : {})
+      .then((d: any) => setCustomers(d?.customers || []))
+      .catch(() => setCustomers([]));
   }, []);
 
   const openAdd = () => {
@@ -191,10 +201,19 @@ export default function AssetsPage() {
             </div>
             <div>
               <Label>Customer *</Label>
-              <Select value={form.customerId} onValueChange={v => setForm(f => ({...f, customerId: v}))}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
-                <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-              </Select>
+              <div className="mt-1">
+                <SearchableSelect
+                  options={customers.map(c => ({
+                    value: c.id,
+                    label: c.name,
+                    description: c.email || c.phone || undefined,
+                  }))}
+                  value={form.customerId}
+                  onValueChange={v => setForm(f => ({...f, customerId: v}))}
+                  placeholder="Select customer..."
+                  searchPlaceholder="Search customer..."
+                />
+              </div>
             </div>
             <div><Label>Serial Number</Label><Input value={form.serialNumber} onChange={e => setForm(f => ({...f, serialNumber: e.target.value}))} className="mt-1" /></div>
             <div><Label>Location</Label><Input value={form.location} onChange={e => setForm(f => ({...f, location: e.target.value}))} className="mt-1" /></div>

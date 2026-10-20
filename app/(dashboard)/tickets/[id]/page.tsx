@@ -3,18 +3,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Send, Edit, User, Calendar, AlertTriangle, CheckCircle, Clock, Wrench } from "lucide-react";
+import { ArrowLeft, Send, Edit, User, Calendar, AlertTriangle, CheckCircle, Clock, Wrench, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { TICKET_STATUS, TICKET_PRIORITY, formatDate } from "@/lib/utils";
 
 const statusFlow = ["NEW", "ASSIGNED", "IN_PROGRESS", "PENDING_PARTS", "RESOLVED", "CLOSED"];
 
 export default function TicketDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
   const [ticket, setTicket] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -65,6 +67,16 @@ export default function TicketDetailPage() {
     fetchTicket();
   };
 
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to delete ticket ${ticket.ticketNumber}?`)) return;
+    const res = await fetch(`/api/tickets/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/tickets");
+    } else {
+      alert("Failed to delete ticket.");
+    }
+  };
+
   if (loading) return <div className="p-6 text-gray-500">Loading ticket...</div>;
   if (!ticket) return <div className="p-6 text-red-500">Ticket not found</div>;
 
@@ -89,6 +101,14 @@ export default function TicketDetailPage() {
             </p>
           </div>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDelete}
+          className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 gap-1.5"
+        >
+          <Trash2 className="h-4 w-4" /> Delete Ticket
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -230,15 +250,19 @@ export default function TicketDetailPage() {
           <Card>
             <CardHeader><CardTitle className="text-base">Assign Technician</CardTitle></CardHeader>
             <CardContent>
-              <Select value={ticket.technicianId || ""} onValueChange={assignTechnician}>
-                <SelectTrigger>
-                  <User className="h-3.5 w-3.5 mr-2 text-gray-400" />
-                  <SelectValue placeholder="Unassigned" />
-                </SelectTrigger>
-                <SelectContent>
-                  {technicians.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                options={technicians.map(t => ({
+                  value: t.id,
+                  label: t.name,
+                  description: t.email || undefined,
+                  badge: t.role || undefined,
+                }))}
+                value={ticket.technicianId || ""}
+                onValueChange={assignTechnician}
+                placeholder="Unassigned (search tech...)"
+                searchPlaceholder="Search technician..."
+                allowClear
+              />
               {ticket.technician && (
                 <p className="text-xs text-gray-500 mt-2">Currently: {ticket.technician.name}</p>
               )}

@@ -30,14 +30,22 @@ export default function SchedulePage() {
     const startOfMonth = new Date(year, month, 1).toISOString();
     const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
 
-    const [tRes, iRes] = await Promise.all([
-      fetch(`/api/tickets?limit=200&scheduledFrom=${startOfMonth}&scheduledTo=${endOfMonth}`),
-      fetch(`/api/inspections?limit=200&scheduledFrom=${startOfMonth}&scheduledTo=${endOfMonth}`),
-    ]);
-    const [tData, iData] = await Promise.all([tRes.json(), iRes.json()]);
-    setTickets(tData.tickets || []);
-    setInspections(iData.inspections || []);
-    setLoading(false);
+    try {
+      const [tRes, iRes] = await Promise.all([
+        fetch(`/api/tickets?limit=200&scheduledFrom=${startOfMonth}&scheduledTo=${endOfMonth}`),
+        fetch(`/api/inspections?limit=200&scheduledFrom=${startOfMonth}&scheduledTo=${endOfMonth}`),
+      ]);
+      const tData = tRes.ok ? await tRes.json() : {};
+      const iData = iRes.ok ? await iRes.json() : {};
+      setTickets(Array.isArray(tData.tickets) ? tData.tickets : []);
+      setInspections(Array.isArray(iData.inspections) ? iData.inspections : []);
+    } catch (e) {
+      console.error("Failed to fetch schedule data", e);
+      setTickets([]);
+      setInspections([]);
+    } finally {
+      setLoading(false);
+    }
   }, [year, month]);
 
   useEffect(() => { fetchData(); }, [fetchData]);

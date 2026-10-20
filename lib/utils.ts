@@ -58,6 +58,23 @@ export const INVOICE_STATUS = {
   CANCELLED: { label: "Cancelled", color: "bg-gray-100 text-gray-800" },
 };
 
+export const INSPECTION_STATUS = {
+  SCHEDULED: { label: "Scheduled", color: "bg-blue-100 text-blue-800" },
+  IN_PROGRESS: { label: "In Progress", color: "bg-yellow-100 text-yellow-800" },
+  PASSED: { label: "Passed", color: "bg-green-100 text-green-800" },
+  FAILED: { label: "Failed", color: "bg-red-100 text-red-800" },
+  CANCELLED: { label: "Cancelled", color: "bg-gray-100 text-gray-800" },
+};
+
+export const ASSET_TYPES: Record<string, { label: string; icon?: string }> = {
+  EXTINGUISHER: { label: "Fire Extinguisher" },
+  SPRINKLER: { label: "Sprinkler System" },
+  ALARM: { label: "Fire Alarm / Detector" },
+  PANEL: { label: "Control Panel" },
+  SUPPRESSION: { label: "Suppression System" },
+  OTHER: { label: "Other Equipment" },
+};
+
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",

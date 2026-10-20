@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function NewInspectionPage() {
@@ -71,12 +72,19 @@ export default function NewInspectionPage() {
           <CardContent className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <Label>Customer *</Label>
-              <Select value={form.customerId} onValueChange={v => setForm(f => ({...f, customerId: v}))}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Select customer" /></SelectTrigger>
-                <SelectContent>
-                  {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <div className="mt-1">
+                <SearchableSelect
+                  options={customers.map(c => ({
+                    value: c.id,
+                    label: c.name,
+                    description: c.email || c.phone || undefined,
+                  }))}
+                  value={form.customerId}
+                  onValueChange={v => setForm(f => ({...f, customerId: v}))}
+                  placeholder="Search & select customer..."
+                  searchPlaceholder="Search customer by name, email..."
+                />
+              </div>
             </div>
             <div>
               <Label>Inspection Type</Label>
@@ -92,12 +100,20 @@ export default function NewInspectionPage() {
             </div>
             <div>
               <Label>Service Type</Label>
-              <Select value={form.serviceTypeId} onValueChange={v => setForm(f => ({...f, serviceTypeId: v}))}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Select service" /></SelectTrigger>
-                <SelectContent>
-                  {serviceTypes.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <div className="mt-1">
+                <SearchableSelect
+                  options={serviceTypes.map(s => ({
+                    value: s.id,
+                    label: s.name,
+                    description: s.description || undefined,
+                  }))}
+                  value={form.serviceTypeId}
+                  onValueChange={v => setForm(f => ({...f, serviceTypeId: v}))}
+                  placeholder="Search & select service..."
+                  searchPlaceholder="Search service type..."
+                  allowClear
+                />
+              </div>
             </div>
             <div>
               <Label>Scheduled Date</Label>

@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -64,6 +65,18 @@ model ServiceType {
 
   tickets     Ticket[]
   inspections Inspection[]
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  displayName String
+  description String?
+  color       String   @default("#3b82f6")
+  permissions String   @default("[]") // JSON string of permission codes
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Ticket {
@@ -253,7 +266,7 @@ model AuditLog {
 model ExcelImportLog {
   id          String   @id @default(cuid())
   fileName    String
-  type        String   // CUSTOMERS, TICKETS
+  type        String   // CUSTOMERS, TICKETS, ALL
   totalRows   Int
   newRecords  Int
   updated     Int
@@ -261,4 +274,18 @@ model ExcelImportLog {
   errors      String?
   createdAt   DateTime @default(now())
   createdBy   String
+}
+
+model SynologySyncConfig {
+  id                String    @id @default("default")
+  enabled           Boolean   @default(false)
+  folderPath        String    @default("/synology")
+  ticketsFileName   String    @default("tickets.xlsx")
+  customersFileName String    @default("customers.xlsx")
+  intervalMinutes   Int       @default(15)
+  lastSyncAt        DateTime?
+  lastStatus        String?   // SUCCESS, FAILED, RUNNING
+  lastMessage       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }

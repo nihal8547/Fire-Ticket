@@ -117,3 +117,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   return PATCH(req, { params });
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  await prisma.inspection.updateMany({ where: { ticketId: params.id }, data: { ticketId: null } });
+  await prisma.invoiceItem.updateMany({ where: { ticketId: params.id }, data: { ticketId: null } });
+  await prisma.ticket.delete({ where: { id: params.id } });
+
+  return NextResponse.json({ success: true });
+}

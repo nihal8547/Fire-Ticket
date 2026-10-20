@@ -4,13 +4,13 @@ services:
     container_name: fireticket-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: fireticket
-      POSTGRES_PASSWORD: fireticket
-      POSTGRES_DB: fireticket
+      POSTGRES_USER: ${POSTGRES_USER:-fireticket}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fireticket}
+      POSTGRES_DB: ${POSTGRES_DB:-fireticket}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5441:5432"
+      - "${POSTGRES_PORT:-5441}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U fireticket -d fireticket"]
       interval: 10s
@@ -27,7 +27,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://fireticket:fireticket@postgres:5432/fireticket
+      DATABASE_URL: postgresql://${POSTGRES_USER:-fireticket}:${POSTGRES_PASSWORD:-fireticket}@postgres:5432/${POSTGRES_DB:-fireticket}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-fire-ticket-secret-change-in-production}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3003}
       AUTH_TRUST_HOST: "true"
@@ -38,8 +38,11 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       EMAIL_FROM: ${EMAIL_FROM:-FireTicket <noreply@fireticket.com>}
       EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      SYNOLOGY_FOLDER_PATH: ${SYNOLOGY_FOLDER_PATH:-/synology}
+    volumes:
+      - ${SYNOLOGY_FOLDER:-./synology_data}:/synology
     ports:
-      - "3003:3000"
+      - "${PORT_BIND:-3003}:3000"
 
 volumes:
   postgres_data:

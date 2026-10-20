@@ -13,8 +13,9 @@ export default function ReportsPage() {
 
   useEffect(() => {
     fetch("/api/reports")
-      .then(r => r.json())
-      .then(d => { setData(d); setLoading(false); });
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { setData(d); setLoading(false); })
+      .catch(() => { setData(null); setLoading(false); });
   }, []);
 
   if (loading) return <div className="p-6 text-gray-500">Loading reports...</div>;

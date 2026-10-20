@@ -26,11 +26,25 @@ export async function GET(req: NextRequest) {
   if (priority) where.priority = priority;
   if (customerId) where.customerId = customerId;
   if (technicianId) where.technicianId = technicianId;
-  if (scheduledFrom || scheduledTo) {
+
+  const parseDate = (dStr: string, isEnd: boolean) => {
+    if (!dStr) return undefined;
+    if (dStr.includes("T")) {
+      const d = new Date(dStr);
+      return isNaN(d.getTime()) ? undefined : d;
+    }
+    const d = new Date(dStr + (isEnd ? "T23:59:59.999Z" : "T00:00:00.000Z"));
+    return isNaN(d.getTime()) ? new Date(dStr) : d;
+  };
+
+  const fromDate = parseDate(scheduledFrom, false);
+  const toDate = parseDate(scheduledTo, true);
+  if (fromDate || toDate) {
     where.scheduledDate = {};
-    if (scheduledFrom) where.scheduledDate.gte = new Date(scheduledFrom);
-    if (scheduledTo) where.scheduledDate.lte = new Date(scheduledTo + "T23:59:59");
+    if (fromDate) where.scheduledDate.gte = fromDate;
+    if (toDate) where.scheduledDate.lte = toDate;
   }
+
   if (search) {
     where.OR = [
       { title: { contains: search, mode: "insensitive" } },
@@ -39,22 +53,27 @@ export async function GET(req: NextRequest) {
     ];
   }
 
-  const [tickets, total] = await Promise.all([
-    prisma.ticket.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: "desc" },
-      include: {
-        customer: { select: { id: true, name: true } },
-        technician: { select: { id: true, name: true } },
-        serviceType: { select: { id: true, name: true } },
-      },
-    }),
-    prisma.ticket.count({ where }),
-  ]);
+  try {
+    const [tickets, total] = await Promise.all([
+      prisma.ticket.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          customer: { select: { id: true, name: true } },
+          technician: { select: { id: true, name: true } },
+          serviceType: { select: { id: true, name: true, color: true } },
+        },
+      }),
+      prisma.ticket.count({ where }),
+    ]);
 
-  return NextResponse.json({ tickets, total, page, limit });
+    return NextResponse.json({ tickets, total, page, limit });
+  } catch (err: any) {
+    console.error("GET /api/tickets error:", err);
+    return NextResponse.json({ error: err.message || "Failed to fetch tickets", tickets: [], total: 0 }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {

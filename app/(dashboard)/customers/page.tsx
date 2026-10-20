@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search, Upload, Download, Eye, Edit, Phone, Mail, MapPin } from "lucide-react";
+import { Plus, Search, Upload, Download, Eye, Edit, Trash2, Phone, Mail, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -20,11 +20,18 @@ export default function CustomersPage() {
 
   const fetchCustomers = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/customers?search=${encodeURIComponent(search)}&limit=50`);
-    const data = await res.json();
-    setCustomers(data.customers || []);
-    setTotal(data.total || 0);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/customers?search=${encodeURIComponent(search)}&limit=50`);
+      const data = res.ok ? await res.json().catch(() => ({})) : {};
+      setCustomers(data.customers || []);
+      setTotal(data.total || 0);
+    } catch (e) {
+      console.error("Failed to fetch customers:", e);
+      setCustomers([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
   }, [search]);
 
   useEffect(() => {
@@ -48,6 +55,16 @@ export default function CustomersPage() {
   const downloadTemplate = () => { window.location.href = "/api/excel/template?type=CUSTOMERS"; };
 
   const closeImport = () => { setImportOpen(false); setImportResult(null); setSelectedFile(null); };
+
+  const deleteCustomer = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete customer "${name}"? This action cannot be undone.`)) return;
+    const res = await fetch(`/api/customers/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      fetchCustomers();
+    } else {
+      alert("Failed to delete customer.");
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -134,11 +151,20 @@ export default function CustomersPage() {
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-end gap-1">
                     <Link href={`/customers/${c.id}`}>
-                      <Button variant="ghost" size="sm" className="gap-1.5 text-xs"><Eye className="h-3.5 w-3.5" />View</Button>
+                      <Button variant="ghost" size="sm" className="h-8 px-2 gap-1 text-xs" title="View customer"><Eye className="h-3.5 w-3.5" />View</Button>
                     </Link>
                     <Link href={`/customers/${c.id}/edit`}>
-                      <Button variant="ghost" size="sm" className="gap-1.5 text-xs"><Edit className="h-3.5 w-3.5" />Edit</Button>
+                      <Button variant="ghost" size="sm" className="h-8 px-2 gap-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50" title="Edit customer"><Edit className="h-3.5 w-3.5" />Edit</Button>
                     </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteCustomer(c.id, c.name)}
+                      className="h-8 px-2 gap-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                      title="Delete customer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />Delete
+                    </Button>
                   </div>
                 </td>
               </tr>

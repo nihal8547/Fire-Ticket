@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ArrowLeft, Building2, Mail, Phone, MapPin, Edit, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DeleteCustomerButton } from "@/components/customers/delete-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TICKET_STATUS, TICKET_PRIORITY, formatDate, formatCurrency } from "@/lib/utils";
 
@@ -39,6 +40,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
           <Link href={`/customers/${customer.id}/edit`}>
             <Button className="gap-2"><Edit className="h-4 w-4" />Edit</Button>
           </Link>
+          <DeleteCustomerButton id={customer.id} name={customer.name} />
         </div>
       </div>
 

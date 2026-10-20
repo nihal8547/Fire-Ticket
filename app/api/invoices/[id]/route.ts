@@ -37,3 +37,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   return NextResponse.json(invoice);
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  await prisma.invoice.delete({ where: { id: params.id } });
+  return NextResponse.json({ success: true });
+}
