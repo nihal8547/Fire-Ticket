@@ -128,7 +128,8 @@ export interface SyncResult {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function syncTicketsFromRows(
   rows: any[],
-  currentUserId?: string
+  currentUserId?: string,
+  customMapping?: Record<string, string>
 ): Promise<SyncResult> {
   let created = 0;
   let updated = 0;
@@ -146,9 +147,21 @@ export async function syncTicketsFromRows(
     const row = rows[i];
     const rowNum = i + 2;
     try {
-      // Column extractions (Supports both Ticket format and Site Visit format)
-      const ticketNumVal = getRowValue(
-        row,
+      const getMapped = (fieldKey: string, ...patterns: (string | RegExp)[]) => {
+        if (customMapping && customMapping[fieldKey]) {
+          const colName = customMapping[fieldKey];
+          if (colName === "__skip__") return undefined;
+          if (colName && colName !== "__auto__") {
+            const val = row[colName];
+            if (val !== undefined && val !== null && String(val).trim() !== "") return val;
+          }
+        }
+        return getRowValue(row, ...patterns);
+      };
+
+      // Column extractions with custom mapping priority & fallback matching
+      const ticketNumVal = getMapped(
+        "ticketNumber",
         "Visit Ref #",
         "Visit Ref",
         "VisitRef#",
@@ -159,24 +172,24 @@ export async function syncTicketsFromRows(
         "Ticket ID",
         "Ticket"
       );
-      const clientNameVal = getRowValue(row, "Client Name", "Customer Name", "Client", "Customer", "Company");
-      const customerEmailVal = getRowValue(row, "Customer Email", "Email", "Client Email");
-      const siteLocationVal = getRowValue(row, "Site / Location", "Site/Location", "Site", "Location", "Address");
-      const purposeVal = getRowValue(row, "Purpose of Visit", "Purpose", "Request type", "Request Type", "Service Type", "Service");
-      const systemVal = getRowValue(row, "System", "Fire System", "Equipment");
-      const engineerVal = getRowValue(row, "Engineer", "Assigned Engineer", "Technician", "Assigned Technician", "Assigned To");
-      const teamVal = getRowValue(row, "Team / Technicians", "Team", "Technicians", "Team/Technicians");
-      const timeInVal = getRowValue(row, "Time In", "TimeIn");
-      const timeOutVal = getRowValue(row, "Time Out", "TimeOut");
-      const hoursOnSiteVal = getRowValue(row, "Hours on Site", "Hours", "Duration");
-      const workDoneVal = getRowValue(row, "Work Done / Findings", "Work Done", "Findings", "Last Update", "Update", "Description", "Details");
-      const nextActionVal = getRowValue(row, "Next Action / Remarks", "Next Action", "Remarks", "Notes");
-      const statusVal = getRowValue(row, "Status", "Ticket Status");
-      const linkedTicketVal = getRowValue(row, "Linked Ticket / RFQ / Job #", "Linked Ticket", "Job #", "RFQ #");
-      const dateVal = getRowValue(row, "Date", "Date Raised", "Raised Date", "Created Date");
-      const dateClosedVal = getRowValue(row, "Date Closed", "Closed Date", "Resolved Date");
-      const typeVal = getRowValue(row, "Type (Emergency/Complaint/Request)", "Type", "Priority");
-      const titleVal = getRowValue(row, "Title", "Subject", "Summary");
+      const clientNameVal = getMapped("clientName", "Client Name", "Customer Name", "Client", "Customer", "Company");
+      const customerEmailVal = getMapped("customerEmail", "Customer Email", "Email", "Client Email");
+      const siteLocationVal = getMapped("siteLocation", "Site / Location", "Site/Location", "Site", "Location", "Address");
+      const purposeVal = getMapped("purpose", "Purpose of Visit", "Purpose", "Request type", "Request Type", "Service Type", "Service");
+      const systemVal = getMapped("system", "System", "Fire System", "Equipment");
+      const engineerVal = getMapped("engineer", "Engineer", "Assigned Engineer", "Technician", "Assigned Technician", "Assigned To");
+      const teamVal = getMapped("team", "Team / Technicians", "Team", "Technicians", "Team/Technicians");
+      const timeInVal = getMapped("timeIn", "Time In", "TimeIn");
+      const timeOutVal = getMapped("timeOut", "Time Out", "TimeOut");
+      const hoursOnSiteVal = getMapped("hoursOnSite", "Hours on Site", "Hours", "Duration");
+      const workDoneVal = getMapped("workDone", "Work Done / Findings", "Work Done", "Findings", "Last Update", "Update", "Description", "Details");
+      const nextActionVal = getMapped("nextAction", "Next Action / Remarks", "Next Action", "Remarks", "Notes");
+      const statusVal = getMapped("status", "Status", "Ticket Status");
+      const linkedTicketVal = getMapped("linkedTicket", "Linked Ticket / RFQ / Job #", "Linked Ticket", "Job #", "RFQ #");
+      const dateVal = getMapped("date", "Date", "Date Raised", "Raised Date", "Created Date");
+      const dateClosedVal = getMapped("dateClosed", "Date Closed", "Closed Date", "Resolved Date");
+      const typeVal = getMapped("type", "Type (Emergency/Complaint/Request)", "Type", "Priority");
+      const titleVal = getMapped("title", "Title", "Subject", "Summary");
 
       const clientName = (clientNameVal || "").toString().trim();
       const customerEmail = (customerEmailVal || "").toString().trim().toLowerCase();
@@ -525,7 +538,8 @@ export async function syncTicketsFromRows(
 // ─────────────────────────────────────────────────────────────────────────────
 export async function syncInspectionsFromRows(
   rows: any[],
-  currentUserId?: string
+  currentUserId?: string,
+  customMapping?: Record<string, string>
 ): Promise<SyncResult> {
   let created = 0;
   let updated = 0;
@@ -541,15 +555,27 @@ export async function syncInspectionsFromRows(
     const row = rows[i];
     const rowNum = i + 2;
     try {
-      // Columns from user screenshot:
+      const getMapped = (fieldKey: string, ...patterns: (string | RegExp)[]) => {
+        if (customMapping && customMapping[fieldKey]) {
+          const colName = customMapping[fieldKey];
+          if (colName === "__skip__") return undefined;
+          if (colName && colName !== "__auto__") {
+            const val = row[colName];
+            if (val !== undefined && val !== null && String(val).trim() !== "") return val;
+          }
+        }
+        return getRowValue(row, ...patterns);
+      };
+
+      // Columns from user screenshot with custom mapping priority & fallback matching:
       // Date, Client Name, Type (Pre-QCDD Check/Inspection), Status, Engineer, Result (Pass/Fail/N-A)
-      const dateVal = getRowValue(row, "Date", "Inspection Date", "Scheduled Date");
-      const clientNameVal = getRowValue(row, "Client Name", "Customer Name", "Client", "Customer", "Company");
-      const typeVal = getRowValue(row, "Type (Pre-QCDD Check/Inspection)", "Type", "Inspection Type", "Category");
-      const statusVal = getRowValue(row, "Status", "Inspection Status");
-      const engineerVal = getRowValue(row, "Engineer", "Assigned Engineer", "Inspector", "Technician");
-      const resultVal = getRowValue(row, "Result (Pass/Fail/N-A)", "Result", "Overall Result", "Pass/Fail", "Result (Pass/Fail)");
-      const insNumVal = getRowValue(row, "Inspection #", "Inspection Number", "InspectionNo", "QCDD Ref #");
+      const dateVal = getMapped("date", "Date", "Inspection Date", "Scheduled Date");
+      const clientNameVal = getMapped("clientName", "Client Name", "Customer Name", "Client", "Customer", "Company");
+      const typeVal = getMapped("type", "Type (Pre-QCDD Check/Inspection)", "Type", "Inspection Type", "Category");
+      const statusVal = getMapped("status", "Status", "Inspection Status");
+      const engineerVal = getMapped("engineer", "Engineer", "Assigned Engineer", "Inspector", "Technician");
+      const resultVal = getMapped("result", "Result (Pass/Fail/N-A)", "Result", "Overall Result", "Pass/Fail", "Result (Pass/Fail)");
+      const insNumVal = getMapped("inspectionNumber", "Inspection #", "Inspection Number", "InspectionNo", "QCDD Ref #");
 
       const clientName = (clientNameVal || "").toString().trim();
       if (!clientName && !dateVal && !typeVal) {
@@ -854,7 +880,8 @@ export interface WorkbookSyncResult extends SyncResult {
 export async function syncWorkbookFromBuffer(
   buffer: Buffer,
   currentUserId?: string,
-  targetSheetNames?: string[]
+  targetSheetNames?: string[],
+  customMapping?: Record<string, string>
 ): Promise<WorkbookSyncResult> {
   const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true });
   let totalCreated = 0;
@@ -895,16 +922,16 @@ export async function syncWorkbookFromBuffer(
 
     if (detected === "INSPECTIONS") {
       label = "Pre-QCDD Checks";
-      res = await syncInspectionsFromRows(rows, currentUserId);
+      res = await syncInspectionsFromRows(rows, currentUserId, customMapping);
     } else if (detected === "CUSTOMERS") {
       label = "Customers";
       res = await syncCustomersFromRows(rows);
     } else if (detected === "VISITS") {
       label = "Site Visits";
-      res = await syncTicketsFromRows(rows, currentUserId);
+      res = await syncTicketsFromRows(rows, currentUserId, customMapping);
     } else {
       label = "Tickets";
-      res = await syncTicketsFromRows(rows, currentUserId);
+      res = await syncTicketsFromRows(rows, currentUserId, customMapping);
     }
 
     totalCreated += res.created;

@@ -402,7 +402,7 @@ export default function UsersAndRolesPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3.5 sm:p-5 md:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -481,7 +481,8 @@ export default function UsersAndRolesPage() {
           </div>
 
           <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[650px] text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-gray-600">
                   <th className="text-left px-5 py-3 font-semibold">User</th>
@@ -595,6 +596,7 @@ export default function UsersAndRolesPage() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}

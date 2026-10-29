@@ -79,12 +79,12 @@ export default function NewTicketPage() {
   };
 
   return (
-    <div className="p-6 max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="p-3.5 sm:p-5 md:p-6 max-w-2xl mx-auto space-y-4">
+      <div className="flex items-center gap-3 mb-2 sm:mb-4">
         <Link href="/tickets"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">New Ticket</h1>
-          <p className="text-sm text-gray-500">Create a new service ticket</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">New Ticket</h1>
+          <p className="text-xs sm:text-sm text-gray-500">Create a new service ticket</p>
         </div>
       </div>
 
@@ -92,7 +92,7 @@ export default function NewTicketPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Card>
-          <CardHeader><CardTitle className="text-base">Ticket Details</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-sm sm:text-base">Ticket Details</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div>
               <Label>Title *</Label>
@@ -102,7 +102,7 @@ export default function NewTicketPage() {
               <Label>Description</Label>
               <Textarea value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} placeholder="Describe the issue or service needed..." className="mt-1" rows={3} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
               <div>
                 <Label>Customer *</Label>
                 <div className="mt-1">
@@ -182,9 +182,11 @@ export default function NewTicketPage() {
           </CardContent>
         </Card>
 
-        <div className="flex gap-3 justify-end">
-          <Link href="/tickets"><Button variant="outline">Cancel</Button></Link>
-          <Button type="submit" disabled={loading}>{loading ? "Creating..." : "Create Ticket"}</Button>
+        <div className="flex gap-3 justify-end pt-2">
+          <Link href="/tickets"><Button variant="outline" size="sm">Cancel</Button></Link>
+          <Button type="submit" size="sm" className="bg-red-600 hover:bg-red-700 text-white" disabled={loading}>
+            {loading ? "Creating..." : "Create Ticket"}
+          </Button>
         </div>
       </form>
     </div>

@@ -11,6 +11,8 @@ export async function POST(req: NextRequest) {
   const file = formData.get("file") as File;
   const rawSheets = formData.get("sheets") as string | null;
 
+  const rawMapping = formData.get("mapping") as string | null;
+
   if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -30,8 +32,20 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Process all sheets in the workbook (or user-selected sheets)
-  const result = await syncWorkbookFromBuffer(buffer, currentUserId, targetSheets);
+  let customMapping: Record<string, string> | undefined = undefined;
+  if (rawMapping) {
+    try {
+      const parsed = JSON.parse(rawMapping);
+      if (parsed && typeof parsed === "object") {
+        customMapping = parsed;
+      }
+    } catch {
+      customMapping = undefined;
+    }
+  }
+
+  // Process all sheets in the workbook (or user-selected sheets) with custom column mapping
+  const result = await syncWorkbookFromBuffer(buffer, currentUserId, targetSheets, customMapping);
 
   if (result.totalRows === 0 && result.failed === 0) {
     return NextResponse.json(

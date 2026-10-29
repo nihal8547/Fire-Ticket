@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#991b1b"/>
+    </linearGradient>
+    
+    <!-- Outer Flame Gradient -->
+    <linearGradient id="flameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fef2f2"/>
+    </linearGradient>
+
+    <!-- Inner Core Gradient -->
+    <linearGradient id="coreGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+
+    <!-- Subtle Drop Shadow -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Base with Shadow -->
+  <rect x="8" y="8" width="112" height="112" rx="30" fill="url(#bgGrad)" filter="url(#shadow)"/>
+  
+  <!-- Subtle Top Highlight Border -->
+  <rect x="9" y="9" width="110" height="110" rx="29" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+
+  <!-- Flame Shape (Lucide-style Fire/Flame Icon) -->
+  <g transform="translate(64, 64) scale(2.6) translate(-12, -12)">
+    <!-- Outer Main Flame -->
+    <path 
+      d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" 
+      fill="url(#flameGrad)"
+    />
+    <!-- Inner Ember / Fire Core -->
+    <path 
+      d="M12 19a4 4 0 0 0 4-4c0-1.2-.5-2.2-1.2-3-.6.8-1.3 1.2-1.8 1.5-.7.4-1 .8-1 1.5a1.5 1.5 0 0 0 1.5 1.5 1.5 1.5 0 0 1-1.5 2.5z" 
+      fill="url(#coreGrad)"
+      opacity="0.95"
+    />
+  </g>
+</svg>

@@ -107,22 +107,24 @@ export default function AssetsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3.5 sm:p-5 md:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Equipment Assets</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{assets.length} assets</p>
+          <p className="text-sm text-gray-500 mt-0.5">{assets.length} total assets</p>
         </div>
-        <Button onClick={openAdd} className="gap-2"><Plus className="h-4 w-4" /> Add Asset</Button>
+        <Button size="sm" onClick={openAdd} className="gap-2 text-xs bg-red-600 hover:bg-red-700 text-white">
+          <Plus className="h-4 w-4" /> Add Asset
+        </Button>
       </div>
 
-      <div className="flex gap-3">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search assets..." className="pl-9" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search assets..." className="pl-9 h-9 text-xs sm:text-sm bg-white" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-44"><SelectValue placeholder="All Status" /></SelectTrigger>
+          <SelectTrigger className="w-40 h-9 text-xs bg-white"><SelectValue placeholder="All Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All Status</SelectItem>
             {Object.entries(ASSET_STATUS).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
@@ -130,58 +132,60 @@ export default function AssetsPage() {
         </Select>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Asset</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Customer</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Type</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Serial #</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Next Service</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Status</th>
-              <th className="text-right px-6 py-3 font-medium text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-500">Loading...</td></tr>
-            ) : assets.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-16">
-                <Package className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                <p className="text-gray-500">No assets found</p>
-              </td></tr>
-            ) : assets.map((a) => {
-              const s = ASSET_STATUS[a.status as keyof typeof ASSET_STATUS];
-              const nextServiceSoon = a.nextServiceDate && new Date(a.nextServiceDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-              return (
-                <tr key={a.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-gray-900">{a.name}</p>
-                    {a.location && <p className="text-xs text-gray-500">{a.location}</p>}
-                  </td>
-                  <td className="px-6 py-4 text-gray-700">{a.customer?.name}</td>
-                  <td className="px-6 py-4 text-gray-600">{a.assetType}</td>
-                  <td className="px-6 py-4 font-mono text-xs text-gray-600">{a.serialNumber || "—"}</td>
-                  <td className="px-6 py-4">
-                    <span className={`text-xs ${nextServiceSoon ? "text-orange-600 font-semibold" : "text-gray-600"}`}>
-                      {formatDate(a.nextServiceDate)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${s?.color}`}>{s?.label}</span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(a)}><Edit className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => deleteAsset(a.id)} className="text-red-600 hover:text-red-700"><Trash2 className="h-3.5 w-3.5" /></Button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-2xs">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[650px] text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50 text-xs">
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Asset</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Customer</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Type</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Serial #</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Next Service</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Status</th>
+                <th className="text-right px-4 sm:px-6 py-3 font-semibold text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr><td colSpan={7} className="text-center py-12 text-gray-500">Loading assets...</td></tr>
+              ) : assets.length === 0 ? (
+                <tr><td colSpan={7} className="text-center py-16">
+                  <Package className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                  <p className="text-gray-500">No assets found</p>
+                </td></tr>
+              ) : assets.map((a) => {
+                const s = ASSET_STATUS[a.status as keyof typeof ASSET_STATUS];
+                const nextServiceSoon = a.nextServiceDate && new Date(a.nextServiceDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                return (
+                  <tr key={a.id} className="hover:bg-gray-50">
+                    <td className="px-4 sm:px-6 py-3.5">
+                      <p className="font-medium text-gray-900">{a.name}</p>
+                      {a.location && <p className="text-xs text-gray-500">{a.location}</p>}
+                    </td>
+                    <td className="px-4 sm:px-6 py-3.5 text-gray-700">{a.customer?.name}</td>
+                    <td className="px-4 sm:px-6 py-3.5 text-gray-600 text-xs">{a.assetType}</td>
+                    <td className="px-4 sm:px-6 py-3.5 font-mono text-xs text-gray-600">{a.serialNumber || "—"}</td>
+                    <td className="px-4 sm:px-6 py-3.5">
+                      <span className={`text-xs ${nextServiceSoon ? "text-orange-600 font-semibold" : "text-gray-600"}`}>
+                        {formatDate(a.nextServiceDate)}
+                      </span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3.5">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${s?.color}`}>{s?.label}</span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3.5 text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(a)}><Edit className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="sm" onClick={() => deleteAsset(a.id)} className="text-red-600 hover:text-red-700"><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -190,8 +194,8 @@ export default function AssetsPage() {
             <DialogTitle>{editAsset ? "Edit Asset" : "Add Asset"}</DialogTitle>
             <DialogDescription>Register fire protection equipment</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2"><Label>Asset Name *</Label><Input value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} className="mt-1" /></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2"><Label>Asset Name *</Label><Input value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} className="mt-1" /></div>
             <div>
               <Label>Type</Label>
               <Select value={form.assetType} onValueChange={v => setForm(f => ({...f, assetType: v}))}>
@@ -219,7 +223,7 @@ export default function AssetsPage() {
             <div><Label>Location</Label><Input value={form.location} onChange={e => setForm(f => ({...f, location: e.target.value}))} className="mt-1" /></div>
             <div><Label>Install Date</Label><Input type="date" value={form.installDate} onChange={e => setForm(f => ({...f, installDate: e.target.value}))} className="mt-1" /></div>
             <div><Label>Next Service</Label><Input type="date" value={form.nextServiceDate} onChange={e => setForm(f => ({...f, nextServiceDate: e.target.value}))} className="mt-1" /></div>
-            <div>
+            <div className="sm:col-span-2">
               <Label>Status</Label>
               <Select value={form.status} onValueChange={v => setForm(f => ({...f, status: v}))}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
@@ -228,11 +232,11 @@ export default function AssetsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="col-span-2"><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} className="mt-1" rows={2} /></div>
+            <div className="sm:col-span-2"><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} className="mt-1" rows={2} /></div>
           </div>
-          <div className="flex gap-2 justify-end mt-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving || !form.name || !form.customerId}>{saving ? "Saving..." : "Save"}</Button>
+          <div className="flex gap-2 justify-end mt-2 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={handleSave} disabled={saving || !form.name || !form.customerId}>{saving ? "Saving..." : "Save"}</Button>
           </div>
         </DialogContent>
       </Dialog>

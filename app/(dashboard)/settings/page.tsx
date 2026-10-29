@@ -155,7 +155,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3.5 sm:p-5 md:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -287,7 +287,8 @@ export default function SettingsPage() {
               <p className="text-sm text-gray-500 py-6 text-center">No service types configured yet.</p>
             ) : (
               <div className="rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[550px] text-sm">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200 text-xs text-gray-600">
                       <th className="text-left px-4 py-2.5 font-semibold">Name</th>
@@ -321,6 +322,7 @@ export default function SettingsPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
           </CardContent>

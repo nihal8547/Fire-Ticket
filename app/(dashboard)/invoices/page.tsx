@@ -145,29 +145,31 @@ export default function InvoicesPage() {
   const pending = invoices.filter(i => ["SENT", "OVERDUE"].includes(i.status)).reduce((s, i) => s + i.total, 0);
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3.5 sm:p-5 md:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
           <p className="text-sm text-gray-500 mt-0.5">{total} total invoices</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)} className="gap-2"><Plus className="h-4 w-4" /> Create Invoice</Button>
+        <Button size="sm" onClick={() => setDialogOpen(true)} className="gap-2 text-xs bg-red-600 hover:bg-red-700 text-white">
+          <Plus className="h-4 w-4" /> Create Invoice
+        </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Card><CardContent className="p-4">
-          <p className="text-sm text-gray-500">Revenue Collected</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(totalRevenue)}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <Card className="shadow-2xs"><CardContent className="p-4">
+          <p className="text-xs sm:text-sm text-gray-500">Revenue Collected</p>
+          <p className="text-xl sm:text-2xl font-bold text-green-600 mt-1">{formatCurrency(totalRevenue)}</p>
         </CardContent></Card>
-        <Card><CardContent className="p-4">
-          <p className="text-sm text-gray-500">Pending / Overdue</p>
-          <p className="text-2xl font-bold text-orange-600 mt-1">{formatCurrency(pending)}</p>
+        <Card className="shadow-2xs"><CardContent className="p-4">
+          <p className="text-xs sm:text-sm text-gray-500">Pending / Overdue</p>
+          <p className="text-xl sm:text-2xl font-bold text-orange-600 mt-1">{formatCurrency(pending)}</p>
         </CardContent></Card>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-44"><SelectValue placeholder="All Status" /></SelectTrigger>
+          <SelectTrigger className="w-44 h-9 text-xs bg-white"><SelectValue placeholder="All Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All Status</SelectItem>
             {Object.entries(INVOICE_STATUS).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
@@ -175,72 +177,74 @@ export default function InvoicesPage() {
         </Select>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Invoice #</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Customer</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Amount</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Status</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Due Date</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Issued</th>
-              <th className="text-right px-6 py-3 font-medium text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-500">Loading...</td></tr>
-            ) : invoices.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-16">
-                <FileText className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                <p className="text-gray-500">No invoices yet</p>
-              </td></tr>
-            ) : invoices.map((inv) => {
-              const s = INVOICE_STATUS[inv.status as keyof typeof INVOICE_STATUS];
-              return (
-                <tr key={inv.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 font-mono text-xs text-gray-600">{inv.invoiceNumber}</td>
-                  <td className="px-6 py-4 font-medium text-gray-900">{inv.customer?.name}</td>
-                  <td className="px-6 py-4 font-semibold text-gray-900">{formatCurrency(inv.total)}</td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${s?.color}`}>{s?.label}</span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">{formatDate(inv.dueDate)}</td>
-                  <td className="px-6 py-4 text-gray-500 text-xs">{formatDate(inv.issueDate)}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {inv.status === "DRAFT" && (
-                        <Button variant="outline" size="sm" onClick={() => updateStatus(inv.id, "SENT")} className="h-8 px-2 text-xs">Send</Button>
-                      )}
-                      {["SENT", "OVERDUE"].includes(inv.status) && (
-                        <Button variant="outline" size="sm" onClick={() => updateStatus(inv.id, "PAID")} className="h-8 px-2 text-xs text-green-600 border-green-200 hover:bg-green-50">Mark Paid</Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEdit(inv)}
-                        className="h-8 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        title="Edit invoice"
-                      >
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteInvoice(inv.id, inv.invoiceNumber)}
-                        className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        title="Delete invoice"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-2xs">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[680px] text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50 text-xs">
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Invoice #</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Customer</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Amount</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Status</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Due Date</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Issued</th>
+                <th className="text-right px-4 sm:px-6 py-3 font-semibold text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr><td colSpan={7} className="text-center py-12 text-gray-500">Loading invoices...</td></tr>
+              ) : invoices.length === 0 ? (
+                <tr><td colSpan={7} className="text-center py-16">
+                  <FileText className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                  <p className="text-gray-500">No invoices yet</p>
+                </td></tr>
+              ) : invoices.map((inv) => {
+                const s = INVOICE_STATUS[inv.status as keyof typeof INVOICE_STATUS];
+                return (
+                  <tr key={inv.id} className="hover:bg-gray-50">
+                    <td className="px-4 sm:px-6 py-3.5 font-mono text-xs font-semibold text-gray-900">{inv.invoiceNumber}</td>
+                    <td className="px-4 sm:px-6 py-3.5 font-medium text-gray-900">{inv.customer?.name}</td>
+                    <td className="px-4 sm:px-6 py-3.5 font-semibold text-gray-900 font-mono">{formatCurrency(inv.total)}</td>
+                    <td className="px-4 sm:px-6 py-3.5">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${s?.color}`}>{s?.label}</span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3.5 text-gray-600 text-xs">{formatDate(inv.dueDate)}</td>
+                    <td className="px-4 sm:px-6 py-3.5 text-gray-500 text-xs">{formatDate(inv.issueDate)}</td>
+                    <td className="px-4 sm:px-6 py-3.5 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {inv.status === "DRAFT" && (
+                          <Button variant="outline" size="sm" onClick={() => updateStatus(inv.id, "SENT")} className="h-8 px-2 text-xs">Send</Button>
+                        )}
+                        {["SENT", "OVERDUE"].includes(inv.status) && (
+                          <Button variant="outline" size="sm" onClick={() => updateStatus(inv.id, "PAID")} className="h-8 px-2 text-xs text-green-600 border-green-200 hover:bg-green-50">Mark Paid</Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEdit(inv)}
+                          className="h-8 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          title="Edit invoice"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteInvoice(inv.id, inv.invoiceNumber)}
+                          className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          title="Delete invoice"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Create Dialog */}
@@ -251,8 +255,8 @@ export default function InvoicesPage() {
             <DialogDescription>Generate a new invoice for a customer</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="sm:col-span-2">
                 <Label>Customer *</Label>
                 <div className="mt-1">
                   <SearchableSelect
@@ -268,7 +272,7 @@ export default function InvoicesPage() {
                   />
                 </div>
               </div>
-              <div>
+              <div className="sm:col-span-2">
                 <Label>Due Date</Label>
                 <Input type="date" value={form.dueDate} onChange={e => setForm(f => ({...f, dueDate: e.target.value}))} className="mt-1" />
               </div>
@@ -281,8 +285,8 @@ export default function InvoicesPage() {
               </div>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {form.items.map((item, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <Input placeholder="Description" value={item.description} onChange={e => updateItem(i, "description", e.target.value)} className="flex-1" />
+                  <div key={i} className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+                    <Input placeholder="Description" value={item.description} onChange={e => updateItem(i, "description", e.target.value)} className="flex-1 min-w-[140px]" />
                     <Input type="number" placeholder="Qty" value={item.quantity} onChange={e => updateItem(i, "quantity", parseFloat(e.target.value) || 0)} className="w-16" min="1" />
                     <Input type="number" placeholder="Price" value={item.unitPrice} onChange={e => updateItem(i, "unitPrice", parseFloat(e.target.value) || 0)} className="w-24" min="0" step="0.01" />
                     {form.items.length > 1 && (
@@ -300,8 +304,8 @@ export default function InvoicesPage() {
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleCreate} disabled={!form.customerId || saving}>{saving ? "Creating..." : "Create Invoice"}</Button>
+              <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={handleCreate} disabled={!form.customerId || saving}>{saving ? "Creating..." : "Create Invoice"}</Button>
             </div>
           </div>
         </DialogContent>
@@ -319,17 +323,23 @@ export default function InvoicesPage() {
           <div className="space-y-4">
             <div>
               <Label>Status</Label>
-              <Select value={editForm.status} onValueChange={(val) => setEditForm({ ...editForm, status: val })}>
+              <Select
+                value={editForm.status}
+                onValueChange={(val) => setEditForm({ ...editForm, status: val })}
+              >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(INVOICE_STATUS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                    <SelectItem key={k} value={k}>
+                      {v.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
             <div>
               <Label>Due Date</Label>
               <Input
@@ -339,19 +349,23 @@ export default function InvoicesPage() {
                 className="mt-1"
               />
             </div>
+
             <div>
-              <Label>Notes</Label>
+              <Label>Internal Notes</Label>
               <Textarea
                 value={editForm.notes}
                 onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
-                placeholder="Payment notes, reference, or terms..."
+                placeholder="Invoice notes or payment reference..."
                 className="mt-1"
                 rows={3}
               />
             </div>
+
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleSaveEdit} disabled={editSaving}>
+              <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={handleSaveEdit} disabled={editSaving}>
                 {editSaving ? "Saving..." : "Save Changes"}
               </Button>
             </div>

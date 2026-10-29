@@ -55,12 +55,12 @@ export default function NewInspectionPage() {
   };
 
   return (
-    <div className="p-6 max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="p-3.5 sm:p-5 md:p-6 max-w-2xl mx-auto space-y-4">
+      <div className="flex items-center gap-3 mb-2 sm:mb-4">
         <Link href="/inspections"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Schedule Inspection</h1>
-          <p className="text-sm text-gray-500">Create a new fire safety inspection</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Schedule Inspection</h1>
+          <p className="text-xs sm:text-sm text-gray-500">Create a new fire safety inspection</p>
         </div>
       </div>
 
@@ -68,9 +68,9 @@ export default function NewInspectionPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Card>
-          <CardHeader><CardTitle className="text-base">Inspection Details</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
+          <CardHeader className="pb-3"><CardTitle className="text-sm sm:text-base">Inspection Details</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="sm:col-span-2">
               <Label>Customer *</Label>
               <div className="mt-1">
                 <SearchableSelect
@@ -115,20 +115,22 @@ export default function NewInspectionPage() {
                 />
               </div>
             </div>
-            <div>
+            <div className="sm:col-span-2">
               <Label>Scheduled Date</Label>
               <Input type="date" value={form.scheduledDate} onChange={e => setForm(f => ({...f, scheduledDate: e.target.value}))} className="mt-1" />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <Label>Notes</Label>
               <Textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} placeholder="Special requirements, access instructions..." className="mt-1" rows={3} />
             </div>
           </CardContent>
         </Card>
 
-        <div className="flex gap-3 justify-end">
-          <Link href="/inspections"><Button variant="outline">Cancel</Button></Link>
-          <Button type="submit" disabled={loading}>{loading ? "Scheduling..." : "Schedule Inspection"}</Button>
+        <div className="flex gap-3 justify-end pt-2">
+          <Link href="/inspections"><Button variant="outline" size="sm">Cancel</Button></Link>
+          <Button type="submit" size="sm" className="bg-red-600 hover:bg-red-700 text-white" disabled={loading}>
+            {loading ? "Scheduling..." : "Schedule Inspection"}
+          </Button>
         </div>
       </form>
     </div>

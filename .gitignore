@@ -10,3 +10,5 @@ prisma/dev.db-journal
 .claude/
 .cursor/
 .devin/
+*.tar.gz
+*.log

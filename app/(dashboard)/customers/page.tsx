@@ -67,21 +67,23 @@ export default function CustomersPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3.5 sm:p-5 md:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
           <p className="text-sm text-gray-500 mt-0.5">{total} total customers</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="gap-2 text-xs">
             <Upload className="h-4 w-4" /> Import Excel
           </Button>
-          <Button variant="outline" onClick={downloadTemplate} className="gap-2">
+          <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-2 text-xs">
             <Download className="h-4 w-4" /> Template
           </Button>
           <Link href="/customers/new">
-            <Button className="gap-2"><Plus className="h-4 w-4" /> Add Customer</Button>
+            <Button size="sm" className="gap-2 text-xs bg-red-600 hover:bg-red-700 text-white">
+              <Plus className="h-4 w-4" /> Add Customer
+            </Button>
           </Link>
         </div>
       </div>
@@ -92,85 +94,87 @@ export default function CustomersPage() {
           placeholder="Search customers by name, email, phone..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 max-w-md"
+          className="pl-9 max-w-md bg-white text-xs sm:text-sm"
         />
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Customer</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Contact</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Location</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Tickets</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Status</th>
-              <th className="text-right px-6 py-3 font-medium text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
-              <tr><td colSpan={6} className="text-center py-12 text-gray-400">Loading...</td></tr>
-            ) : customers.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-12 text-gray-400">No customers found</td></tr>
-            ) : customers.map((c) => (
-              <tr key={c.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-semibold text-sm shrink-0">
-                      {c.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{c.name}</p>
-                      {c.contactPerson && <p className="text-xs text-gray-500">{c.contactPerson}</p>}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="space-y-0.5 text-xs">
-                    {c.email && <div className="flex items-center gap-1.5 text-gray-600"><Mail className="h-3 w-3" />{c.email}</div>}
-                    {c.phone && <div className="flex items-center gap-1.5 text-gray-600"><Phone className="h-3 w-3" />{c.phone}</div>}
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-xs">
-                  {(c.city || c.state) && (
-                    <div className="flex items-center gap-1.5 text-gray-600">
-                      <MapPin className="h-3 w-3" />
-                      {[c.city, c.state].filter(Boolean).join(", ")}
-                    </div>
-                  )}
-                </td>
-                <td className="px-6 py-4">
-                  <span className="font-semibold text-gray-900">{c._count?.tickets || 0}</span>
-                </td>
-                <td className="px-6 py-4">
-                  <Badge className={c.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
-                    {c.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-end gap-1">
-                    <Link href={`/customers/${c.id}`}>
-                      <Button variant="ghost" size="sm" className="h-8 px-2 gap-1 text-xs" title="View customer"><Eye className="h-3.5 w-3.5" />View</Button>
-                    </Link>
-                    <Link href={`/customers/${c.id}/edit`}>
-                      <Button variant="ghost" size="sm" className="h-8 px-2 gap-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50" title="Edit customer"><Edit className="h-3.5 w-3.5" />Edit</Button>
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteCustomer(c.id, c.name)}
-                      className="h-8 px-2 gap-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
-                      title="Delete customer"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />Delete
-                    </Button>
-                  </div>
-                </td>
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-2xs">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[680px] text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="text-left px-4 sm:px-6 py-3 font-medium text-gray-600">Customer</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-medium text-gray-600">Contact</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-medium text-gray-600">Location</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-medium text-gray-600">Tickets</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-medium text-gray-600">Status</th>
+                <th className="text-right px-4 sm:px-6 py-3 font-medium text-gray-600">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr><td colSpan={6} className="text-center py-12 text-gray-400">Loading...</td></tr>
+              ) : customers.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-12 text-gray-400">No customers found</td></tr>
+              ) : customers.map((c) => (
+                <tr key={c.id} className="hover:bg-gray-50">
+                  <td className="px-4 sm:px-6 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-semibold text-sm shrink-0">
+                        {c.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 truncate">{c.name}</p>
+                        {c.contactPerson && <p className="text-xs text-gray-500 truncate">{c.contactPerson}</p>}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 sm:px-6 py-3.5">
+                    <div className="space-y-0.5 text-xs">
+                      {c.email && <div className="flex items-center gap-1.5 text-gray-600"><Mail className="h-3 w-3" />{c.email}</div>}
+                      {c.phone && <div className="flex items-center gap-1.5 text-gray-600"><Phone className="h-3 w-3" />{c.phone}</div>}
+                    </div>
+                  </td>
+                  <td className="px-4 sm:px-6 py-3.5 text-xs">
+                    {(c.city || c.state) && (
+                      <div className="flex items-center gap-1.5 text-gray-600">
+                        <MapPin className="h-3 w-3" />
+                        {[c.city, c.state].filter(Boolean).join(", ")}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 sm:px-6 py-3.5">
+                    <span className="font-semibold text-gray-900">{c._count?.tickets || 0}</span>
+                  </td>
+                  <td className="px-4 sm:px-6 py-3.5">
+                    <Badge className={c.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
+                      {c.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </td>
+                  <td className="px-4 sm:px-6 py-3.5 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Link href={`/customers/${c.id}`}>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 gap-1 text-xs" title="View customer"><Eye className="h-3.5 w-3.5" />View</Button>
+                      </Link>
+                      <Link href={`/customers/${c.id}/edit`}>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 gap-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50" title="Edit customer"><Edit className="h-3.5 w-3.5" />Edit</Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteCustomer(c.id, c.name)}
+                        className="h-8 px-2 gap-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Delete customer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />Delete
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <Dialog open={importOpen} onOpenChange={(v) => { if (!v) closeImport(); else setImportOpen(true); }}>
@@ -191,13 +195,13 @@ export default function CustomersPage() {
                 <input id="excel-file-cust" type="file" accept=".xlsx,.xls" className="hidden"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
               </div>
-              <div className="flex justify-between items-center">
-                <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-1.5">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+                <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-1.5 w-full sm:w-auto">
                   <Download className="h-3.5 w-3.5" /> Template
                 </Button>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={closeImport}>Cancel</Button>
-                  <Button onClick={handleImport} disabled={!selectedFile || importing}>
+                <div className="flex gap-2 w-full sm:w-auto justify-end">
+                  <Button variant="outline" size="sm" onClick={closeImport}>Cancel</Button>
+                  <Button size="sm" onClick={handleImport} disabled={!selectedFile || importing}>
                     {importing ? "Importing..." : "Import"}
                   </Button>
                 </div>

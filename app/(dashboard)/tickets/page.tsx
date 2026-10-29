@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import Link from "next/link";
 import {
   Plus,
@@ -24,6 +24,15 @@ import {
   X,
   MessageSquare,
   FileSpreadsheet,
+  ChevronDown,
+  ChevronUp,
+  ChevronRight,
+  ExternalLink,
+  MapPin,
+  Phone,
+  Mail,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +51,48 @@ export default function TicketsPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  const toggleRow = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (expandedIds.size === tickets.length) {
+      setExpandedIds(new Set());
+    } else {
+      setExpandedIds(new Set(tickets.map((t) => t.id)));
+    }
+  };
+
+  const handleQuickStatusChange = async (ticketId: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/tickets/${ticketId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: newStatus,
+          ...(newStatus === "RESOLVED" ? { resolvedDate: new Date().toISOString() } : {}),
+        }),
+      });
+      if (res.ok) {
+        setTickets((prev) =>
+          prev.map((t) => (t.id === ticketId ? { ...t, status: newStatus } : t))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to update status:", err);
+    }
+  };
+
   const [importOpen, setImportOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
@@ -97,13 +148,6 @@ export default function TicketsPage() {
     if (result.success) fetchTickets();
   };
 
-  useEffect(() => {
-    fetch("/api/users?role=TECHNICIAN")
-      .then((r) => r.json())
-      .then((d) => setTechnicians(Array.isArray(d) ? d : []))
-      .catch(() => setTechnicians([]));
-  }, []);
-
   const openEdit = (t: any) => {
     setEditingTicket(t);
     setEditForm({
@@ -114,6 +158,12 @@ export default function TicketsPage() {
       technicianId: t.technicianId || "NONE",
       notes: t.notes || "",
     });
+    if (technicians.length === 0) {
+      fetch("/api/users?role=TECHNICIAN")
+        .then((r) => r.json())
+        .then((d) => setTechnicians(Array.isArray(d) ? d : []))
+        .catch(() => setTechnicians([]));
+    }
     setEditOpen(true);
   };
 
@@ -157,76 +207,73 @@ export default function TicketsPage() {
     return { open, inProgress, emergency, closed };
   }, [tickets]);
 
-  // Priority Pill Renderer
+  // Priority Pill Renderer (Minimal Linear-style dots)
   const renderPriorityBadge = (priority: string) => {
     switch (priority) {
       case "EMERGENCY":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80 shadow-xs ring-1 ring-rose-500/10">
-            <Flame className="h-3 w-3 text-rose-600 animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-600">
+            <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
             Emergency
           </span>
         );
       case "HIGH":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200/80">
-            <AlertTriangle className="h-3 w-3 text-amber-600" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
             High
           </span>
         );
       case "MEDIUM":
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200/70">
+          <span className="inline-flex items-center gap-1.5 text-xs text-blue-600">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
             Medium
           </span>
         );
       case "LOW":
       default:
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200/80">
+          <span className="inline-flex items-center gap-1.5 text-xs text-gray-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-gray-300" />
             Low
           </span>
         );
     }
   };
 
-  // Status Pill Renderer
+  // Status Pill Renderer (Minimal soft tag)
   const renderStatusBadge = (status: string) => {
     switch (status) {
       case "CLOSED":
       case "RESOLVED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-            <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700">
             Closed
           </span>
         );
       case "IN_PROGRESS":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping" />
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-amber-50 text-amber-700">
             In Progress
           </span>
         );
       case "ASSIGNED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-purple-50 text-purple-700">
             Assigned
           </span>
         );
       case "PENDING_PARTS":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-orange-50 text-orange-700">
             Pending Parts
           </span>
         );
       case "NEW":
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-sky-50 text-sky-700">
             New
           </span>
         );
@@ -234,7 +281,7 @@ export default function TicketsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-3.5 sm:p-5 md:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       {/* ───────────────────────────────────────────────────────────── */}
       {/* 1. Header & Actions                                           */}
       {/* ───────────────────────────────────────────────────────────── */}
@@ -286,7 +333,7 @@ export default function TicketsPage() {
       {/* ───────────────────────────────────────────────────────────── */}
       {/* 2. Top Summary KPI Cards                                      */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
         <button
           type="button"
           onClick={() => {
@@ -439,43 +486,58 @@ export default function TicketsPage() {
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* 4. Tickets Table                                              */}
+      {/* 4. Tickets Table (Minimal & Spacious)                         */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-xs overflow-hidden">
+      <div className="rounded-xl border border-gray-200/80 bg-white shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[760px] text-sm">
             <thead>
-              <tr className="border-b border-gray-200/80 bg-gray-50/70 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                <th className="text-left px-5 py-3.5">Ticket</th>
-                <th className="text-left px-5 py-3.5">Client / Customer</th>
-                <th className="text-left px-5 py-3.5">Assigned Engineer</th>
-                <th className="text-left px-5 py-3.5">Service Type</th>
-                <th className="text-left px-5 py-3.5">Priority</th>
-                <th className="text-left px-5 py-3.5">Status</th>
-                <th className="text-left px-5 py-3.5">Date & Age</th>
-                <th className="text-right px-5 py-3.5">Actions</th>
+              <tr className="border-b border-gray-100 bg-gray-50/40 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                <th className="w-10 px-3 py-3 text-center">
+                  <button
+                    type="button"
+                    onClick={toggleAll}
+                    className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-700 transition-colors"
+                    title={expandedIds.size === tickets.length && tickets.length > 0 ? "Collapse all" : "Expand all"}
+                  >
+                    {expandedIds.size === tickets.length && tickets.length > 0 ? (
+                      <Minimize2 className="h-3.5 w-3.5 text-red-600" />
+                    ) : (
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </th>
+                <th className="text-left px-3 py-3 font-semibold">Ticket & Title</th>
+                <th className="text-left px-3 py-3 font-semibold">Client</th>
+                <th className="text-left px-3 py-3 font-semibold">Assigned</th>
+                <th className="text-left px-3 py-3 font-semibold">Service</th>
+                <th className="text-left px-3 py-3 font-semibold">Priority</th>
+                <th className="text-left px-3 py-3 font-semibold">Status</th>
+                <th className="text-left px-3 py-3 font-semibold">Date</th>
+                <th className="text-right px-4 py-3 font-semibold w-24">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td className="px-5 py-4">
-                      <div className="h-4 bg-gray-200 rounded w-36 mb-2"></div>
-                      <div className="h-3 bg-gray-100 rounded w-20"></div>
+                  <tr key={i} className="animate-pulse border-b border-gray-50">
+                    <td className="px-3 py-3.5 text-center"><div className="h-4 w-4 bg-gray-100 rounded mx-auto"></div></td>
+                    <td className="px-3 py-3.5">
+                      <div className="h-3.5 bg-gray-100 rounded w-44 mb-1.5"></div>
+                      <div className="h-2.5 bg-gray-50 rounded w-20"></div>
                     </td>
-                    <td className="px-5 py-4"><div className="h-4 bg-gray-200 rounded w-28"></div></td>
-                    <td className="px-5 py-4"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
-                    <td className="px-5 py-4"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
-                    <td className="px-5 py-4"><div className="h-5 bg-gray-200 rounded-full w-16"></div></td>
-                    <td className="px-5 py-4"><div className="h-5 bg-gray-200 rounded-full w-16"></div></td>
-                    <td className="px-5 py-4"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
-                    <td className="px-5 py-4 text-right"><div className="h-7 bg-gray-200 rounded w-16 ml-auto"></div></td>
+                    <td className="px-3 py-3.5"><div className="h-3.5 bg-gray-100 rounded w-28"></div></td>
+                    <td className="px-3 py-3.5"><div className="h-3.5 bg-gray-100 rounded w-24"></div></td>
+                    <td className="px-3 py-3.5"><div className="h-3.5 bg-gray-100 rounded w-20"></div></td>
+                    <td className="px-3 py-3.5"><div className="h-3 bg-gray-100 rounded w-16"></div></td>
+                    <td className="px-3 py-3.5"><div className="h-4 bg-gray-100 rounded-full w-14"></div></td>
+                    <td className="px-3 py-3.5"><div className="h-3 bg-gray-100 rounded w-16"></div></td>
+                    <td className="px-4 py-3.5 text-right"><div className="h-5 bg-gray-100 rounded w-12 ml-auto"></div></td>
                   </tr>
                 ))
               ) : tickets.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-16 px-4">
+                  <td colSpan={9} className="text-center py-16 px-4">
                     <div className="max-w-sm mx-auto space-y-3">
                       <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto text-gray-400">
                         <TicketIcon className="h-6 w-6" />
@@ -506,152 +568,295 @@ export default function TicketsPage() {
                 </tr>
               ) : (
                 tickets.map((t) => {
-                  const daysOpen = Math.max(
-                    0,
-                    Math.floor((Date.now() - new Date(t.updatedAt || t.createdAt).getTime()) / (1000 * 60 * 60 * 24))
-                  );
-                  const isClosed = t.status === "CLOSED" || t.status === "RESOLVED";
+                  const isExpanded = expandedIds.has(t.id);
 
                   return (
-                    <tr
-                      key={t.id}
-                      className="group hover:bg-gray-50/80 transition-colors"
-                    >
-                      {/* Ticket Column */}
-                      <td className="px-5 py-3.5">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-[11px] font-semibold text-gray-700 bg-gray-100/90 group-hover:bg-red-50 group-hover:text-red-700 group-hover:border-red-200 px-2 py-0.5 rounded border border-gray-200/70 transition-colors">
-                              {t.ticketNumber}
-                            </span>
-                          </div>
-                          <Link
-                            href={`/tickets/${t.id}`}
-                            className="font-semibold text-gray-900 group-hover:text-red-600 transition-colors text-sm line-clamp-1 block"
-                            title={t.title}
+                    <Fragment key={t.id}>
+                      {/* Minimal Main Row */}
+                      <tr
+                        onClick={() => toggleRow(t.id)}
+                        className={`group cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 ${
+                          isExpanded
+                            ? "bg-slate-50/70"
+                            : "hover:bg-gray-50/50"
+                        }`}
+                      >
+                        {/* Expand Chevron Button */}
+                        <td className="w-10 px-3 py-3.5 text-center">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleRow(t.id);
+                            }}
+                            className="h-6 w-6 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors mx-auto"
+                            title={isExpanded ? "Collapse row" : "Expand details"}
                           >
-                            {t.title}
-                          </Link>
-                          {(t.notes || t.description) && (
-                            <p
-                              className="text-[11px] text-gray-500 line-clamp-1 flex items-center gap-1 font-normal"
-                              title={t.notes || t.description}
-                            >
-                              <MessageSquare className="h-3 w-3 shrink-0 text-gray-400" />
-                              {t.notes || t.description}
-                            </p>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Customer Column */}
-                      <td className="px-5 py-3.5">
-                        <Link
-                          href={`/customers/${t.customer?.id}`}
-                          className="font-medium text-gray-800 hover:text-red-600 transition-colors inline-flex items-center gap-1.5"
-                        >
-                          <Building2 className="h-3.5 w-3.5 text-gray-400 group-hover:text-red-500 shrink-0" />
-                          <span className="truncate max-w-[170px]">{t.customer?.name || "—"}</span>
-                        </Link>
-                      </td>
-
-                      {/* Technician Column */}
-                      <td className="px-5 py-3.5">
-                        {t.technician ? (
-                          <div className="flex items-center gap-2">
-                            <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center text-[10px] font-bold shadow-xs shrink-0">
-                              {t.technician.name.charAt(0).toUpperCase()}
-                            </div>
-                            <span className="font-medium text-gray-800 text-xs truncate max-w-[130px]">
-                              {t.technician.name}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-gray-400 bg-gray-50 border border-dashed border-gray-200 rounded-full px-2.5 py-0.5 italic">
-                            <User className="h-3 w-3" />
-                            Unassigned
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Service Type Column */}
-                      <td className="px-5 py-3.5">
-                        {t.serviceType ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-50 border border-gray-200/70 text-gray-700">
-                            <span
-                              className="h-2 w-2 rounded-full shrink-0"
-                              style={{ background: t.serviceType.color || "#ef4444" }}
+                            <ChevronDown
+                              className={`h-4 w-4 transition-transform duration-200 ${
+                                isExpanded ? "rotate-180 text-gray-800" : ""
+                              }`}
                             />
-                            <span className="truncate max-w-[120px]">{t.serviceType.name}</span>
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 text-xs">—</span>
-                        )}
-                      </td>
+                          </button>
+                        </td>
 
-                      {/* Priority Column */}
-                      <td className="px-5 py-3.5">{renderPriorityBadge(t.priority)}</td>
-
-                      {/* Status Column */}
-                      <td className="px-5 py-3.5">{renderStatusBadge(t.status)}</td>
-
-                      {/* Date & Age Column */}
-                      <td className="px-5 py-3.5 text-xs">
-                        <p className="font-medium text-gray-800">{formatDate(t.createdAt)}</p>
-                        {isClosed ? (
-                          <p className="text-[11px] text-gray-400 mt-0.5">
-                            {t.resolvedDate ? `Closed ${formatDate(t.resolvedDate)}` : "Closed"}
-                          </p>
-                        ) : (
-                          <span
-                            className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium mt-0.5 border ${
-                              daysOpen >= 7
-                                ? "bg-red-50 text-red-700 border-red-200"
-                                : daysOpen >= 3
-                                ? "bg-amber-50 text-amber-700 border-amber-200"
-                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            }`}
-                          >
-                            <Clock className="h-2.5 w-2.5" />
-                            {daysOpen === 0 ? "Updated today" : `${daysOpen}d since update`}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Actions Column */}
-                      <td className="px-5 py-3.5 text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                          <Link href={`/tickets/${t.id}`}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
-                              title="View details"
+                        {/* Ticket & Title */}
+                        <td className="px-3 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-semibold text-gray-500">
+                              #{t.ticketNumber}
+                            </span>
+                            <Link
+                              href={`/tickets/${t.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-medium text-gray-900 hover:text-red-600 transition-colors text-xs truncate max-w-[280px]"
                             >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                              {t.title}
+                            </Link>
+                          </div>
+                          {t.externalRef && (
+                            <span className="text-[10px] text-gray-400 font-mono block pl-0.5">
+                              Ref: {t.externalRef}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Customer */}
+                        <td className="px-3 py-3.5">
+                          <Link
+                            href={`/customers/${t.customer?.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs font-medium text-gray-800 hover:text-red-600 transition-colors block truncate max-w-[170px]"
+                          >
+                            {t.customer?.name || "—"}
                           </Link>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
-                            onClick={() => openEdit(t)}
-                            title="Quick Edit ticket"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
-                            onClick={() => handleDeleteTicket(t.id, t.ticketNumber)}
-                            title="Delete ticket"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
+                          {t.customer?.city && (
+                            <span className="text-[11px] text-gray-400 block truncate max-w-[170px]">
+                              {t.customer.city}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Assigned Engineer */}
+                        <td className="px-3 py-3.5">
+                          {t.technician ? (
+                            <div className="flex items-center gap-1.5">
+                              <div className="h-5 w-5 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-[10px] font-semibold shrink-0 border border-gray-200/80">
+                                {t.technician.name.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-xs text-gray-700 truncate max-w-[110px]">
+                                {t.technician.name}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">Unassigned</span>
+                          )}
+                        </td>
+
+                        {/* Service Type */}
+                        <td className="px-3 py-3.5">
+                          <span className="text-xs text-gray-600 truncate max-w-[120px] block">
+                            {t.serviceType?.name || "—"}
+                          </span>
+                        </td>
+
+                        {/* Priority */}
+                        <td className="px-3 py-3.5">{renderPriorityBadge(t.priority)}</td>
+
+                        {/* Status */}
+                        <td className="px-3 py-3.5">{renderStatusBadge(t.status)}</td>
+
+                        {/* Date */}
+                        <td className="px-3 py-3.5 text-xs text-gray-500 whitespace-nowrap">
+                          {formatDate(t.createdAt)}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => openEdit(t)}
+                              className="h-7 w-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                              title="Quick Edit"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTicket(t.id, t.ticketNumber)}
+                              className="h-7 w-7 flex items-center justify-center rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Minimal Dropdown Expanded Drawer */}
+                      {isExpanded && (
+                        <tr
+                          key={`${t.id}-expanded`}
+                          className="bg-gray-50/70 border-b border-gray-200/80"
+                        >
+                          <td colSpan={9} className="p-0">
+                            <div className="px-8 py-4 space-y-3.5">
+                              {/* Top Info Bar */}
+                              <div className="flex items-center justify-between text-xs">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-semibold text-gray-500">
+                                    #{t.ticketNumber}
+                                  </span>
+                                  <span className="font-semibold text-gray-900">{t.title}</span>
+                                </div>
+                                <Link
+                                  href={`/tickets/${t.id}`}
+                                  className="text-red-600 hover:text-red-700 font-medium inline-flex items-center gap-1 text-xs hover:underline"
+                                >
+                                  Open Full Work Order <ExternalLink className="h-3 w-3" />
+                                </Link>
+                              </div>
+
+                              {/* 3 Minimal Info Blocks */}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                                {/* Block 1: Description & Remarks */}
+                                <div className="bg-white p-3.5 rounded-lg border border-gray-200/80 space-y-1.5">
+                                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">
+                                    Issue Description
+                                  </span>
+                                  <p className="text-xs text-gray-700 leading-relaxed max-h-32 overflow-y-auto whitespace-pre-wrap">
+                                    {t.description || t.notes || "No additional description entered."}
+                                  </p>
+                                  {t.notes && t.description && t.notes !== t.description && (
+                                    <p className="text-[11px] text-gray-500 pt-1.5 border-t border-gray-100">
+                                      <span className="font-medium text-gray-600">Notes: </span>
+                                      {t.notes}
+                                    </p>
+                                  )}
+                                </div>
+
+                                {/* Block 2: Client & Contact */}
+                                <div className="bg-white p-3.5 rounded-lg border border-gray-200/80 space-y-1.5">
+                                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">
+                                    Client Details
+                                  </span>
+                                  <div className="space-y-1 text-xs">
+                                    <Link
+                                      href={`/customers/${t.customer?.id}`}
+                                      className="font-semibold text-gray-900 hover:text-red-600 block truncate"
+                                    >
+                                      {t.customer?.name || "Unspecified"}
+                                    </Link>
+                                    {t.customer?.address && (
+                                      <p className="text-gray-500 text-[11px] truncate">
+                                        {t.customer.address}
+                                        {t.customer.city ? `, ${t.customer.city}` : ""}
+                                      </p>
+                                    )}
+                                    <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px]">
+                                      {t.customer?.phone && (
+                                        <a
+                                          href={`tel:${t.customer.phone}`}
+                                          className="text-blue-600 hover:underline font-mono"
+                                        >
+                                          {t.customer.phone}
+                                        </a>
+                                      )}
+                                      {t.customer?.email && (
+                                        <a
+                                          href={`mailto:${t.customer.email}`}
+                                          className="text-blue-600 hover:underline truncate max-w-[140px]"
+                                        >
+                                          {t.customer.email}
+                                        </a>
+                                      )}
+                                    </div>
+                                    {t.customer?.contactPerson && (
+                                      <p className="text-gray-400 text-[11px] pt-0.5">
+                                        Contact: {t.customer.contactPerson}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Block 3: Assignment & Dates */}
+                                <div className="bg-white p-3.5 rounded-lg border border-gray-200/80 space-y-1.5 text-xs">
+                                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">
+                                    Service & Assignment
+                                  </span>
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between py-0.5 text-gray-600">
+                                      <span className="text-gray-400">Service:</span>
+                                      <span className="font-medium text-gray-800">
+                                        {t.serviceType?.name || "Standard Maintenance"}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between py-0.5 text-gray-600">
+                                      <span className="text-gray-400">Technician:</span>
+                                      <span className="font-medium text-gray-800">
+                                        {t.technician?.name || "Unassigned"}
+                                      </span>
+                                    </div>
+                                    {t.scheduledDate && (
+                                      <div className="flex justify-between py-0.5 text-gray-600">
+                                        <span className="text-gray-400">Scheduled:</span>
+                                        <span>{formatDate(t.scheduledDate)}</span>
+                                      </div>
+                                    )}
+                                    {t.resolvedDate && (
+                                      <div className="flex justify-between py-0.5 text-gray-600">
+                                        <span className="text-gray-400">Closed:</span>
+                                        <span className="font-medium text-emerald-700">{formatDate(t.resolvedDate)}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Quick Status Bar */}
+                              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-200/70">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <span className="text-[11px] text-gray-400 font-medium mr-1.5">Status:</span>
+                                  {["NEW", "ASSIGNED", "IN_PROGRESS", "PENDING_PARTS", "RESOLVED", "CLOSED"].map((s) => (
+                                    <button
+                                      key={s}
+                                      type="button"
+                                      disabled={t.status === s}
+                                      onClick={() => handleQuickStatusChange(t.id, s)}
+                                      className={`text-[11px] px-2 py-0.5 rounded-md font-medium transition-all ${
+                                        t.status === s
+                                          ? "bg-gray-900 text-white font-semibold cursor-default"
+                                          : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                                      }`}
+                                    >
+                                      {TICKET_STATUS[s as keyof typeof TICKET_STATUS]?.label || s}
+                                    </button>
+                                  ))}
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => openEdit(t)}
+                                    className="text-xs text-gray-600 hover:text-gray-900 font-medium inline-flex items-center gap-1"
+                                  >
+                                    <Edit className="h-3 w-3" /> Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteTicket(t.id, t.ticketNumber)}
+                                    className="text-xs text-red-600 hover:text-red-700 font-medium inline-flex items-center gap-1"
+                                  >
+                                    <Trash2 className="h-3 w-3" /> Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })
               )}

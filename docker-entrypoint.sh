@@ -13,6 +13,11 @@ if [ -n "$DATABASE_URL" ]; then
   elif command -v npx > /dev/null 2>&1; then
     npx prisma db push --skip-generate || echo "==> Prisma notice: db push completed with code $?"
   fi
+
+  if [ -f "./prisma/seed.js" ]; then
+    echo "==> Running database seed..."
+    node ./prisma/seed.js || echo "==> Seed notice: completed with code $?"
+  fi
 fi
 
 echo "==> Starting FireTicket Application on port ${PORT:-3000}..."

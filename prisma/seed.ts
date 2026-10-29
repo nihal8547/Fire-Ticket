@@ -4,9 +4,11 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  // Admin user
+  console.log("==> Seeding clean Production initial data...");
+
+  // 1. Initial Admin User
   const adminPassword = await bcrypt.hash("admin123", 10);
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: "admin@fireticket.com" },
     update: {},
     create: {
@@ -17,45 +19,7 @@ async function main() {
     },
   });
 
-  // Manager user
-  const managerPassword = await bcrypt.hash("manager123", 10);
-  await prisma.user.upsert({
-    where: { email: "manager@fireticket.com" },
-    update: {},
-    create: {
-      email: "manager@fireticket.com",
-      name: "Manager User",
-      password: managerPassword,
-      role: "MANAGER",
-    },
-  });
-
-  // Technician users
-  const techPassword = await bcrypt.hash("tech123", 10);
-  await prisma.user.upsert({
-    where: { email: "tech1@fireticket.com" },
-    update: {},
-    create: {
-      email: "tech1@fireticket.com",
-      name: "Alex Johnson",
-      password: techPassword,
-      role: "TECHNICIAN",
-      phone: "555-0101",
-    },
-  });
-  await prisma.user.upsert({
-    where: { email: "tech2@fireticket.com" },
-    update: {},
-    create: {
-      email: "tech2@fireticket.com",
-      name: "Maria Garcia",
-      password: techPassword,
-      role: "TECHNICIAN",
-      phone: "555-0102",
-    },
-  });
-
-  // System Roles
+  // 2. Default System Roles
   const defaultRoles = [
     {
       name: "ADMIN",
@@ -115,22 +79,7 @@ async function main() {
     });
   }
 
-  // Synology Config
-  await prisma.synologySyncConfig.upsert({
-    where: { id: "default" },
-    update: {},
-    create: {
-      id: "default",
-      folderPath: "/synology",
-      ticketsFileName: "tickets.xlsx",
-      customersFileName: "customers.xlsx",
-      intervalMinutes: 15,
-      enabled: false,
-      lastStatus: "IDLE",
-    },
-  });
-
-  // Default service types
+  // 3. Default System Service Types
   const serviceTypeData = [
     { name: "Annual Inspection", description: "Complete annual fire safety inspection", defaultDuration: 120, price: 299 },
     { name: "Quarterly Inspection", description: "Quarterly fire suppression system check", defaultDuration: 60, price: 149 },
@@ -148,44 +97,28 @@ async function main() {
     });
   }
 
-  // Sample customers
-  const customer1 = await prisma.customer.upsert({
-    where: { email: "contact@acmecorp.com" },
+  // 4. Default Synology Sync Config
+  await prisma.synologySyncConfig.upsert({
+    where: { id: "default" },
     update: {},
     create: {
-      name: "Acme Corporation",
-      email: "contact@acmecorp.com",
-      phone: "555-1000",
-      address: "100 Industrial Blvd",
-      city: "Chicago",
-      state: "IL",
-      zipCode: "60601",
-      contactPerson: "Robert Smith",
-      externalRef: "ACME-001",
+      id: "default",
+      folderPath: "/synology",
+      ticketsFileName: "tickets.xlsx",
+      customersFileName: "customers.xlsx",
+      intervalMinutes: 15,
+      enabled: false,
+      lastStatus: "IDLE",
     },
   });
 
-  const customer2 = await prisma.customer.upsert({
-    where: { email: "info@greenplaza.com" },
-    update: {},
-    create: {
-      name: "Green Plaza Mall",
-      email: "info@greenplaza.com",
-      phone: "555-2000",
-      address: "500 Mall Drive",
-      city: "Chicago",
-      state: "IL",
-      zipCode: "60602",
-      contactPerson: "Sarah Williams",
-    },
-  });
-
-  console.log("Seed complete");
-  console.log(`Admin: admin@fireticket.com / admin123`);
-  console.log(`Manager: manager@fireticket.com / manager123`);
-  console.log(`Technician: tech1@fireticket.com / tech123`);
+  console.log("==> Clean Production Seed complete!");
+  console.log("==> Initial Admin Login: admin@fireticket.com / admin123");
 }
 
 main()
-  .catch((e) => { console.error(e); process.exit(1); })
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
   .finally(() => prisma.$disconnect());

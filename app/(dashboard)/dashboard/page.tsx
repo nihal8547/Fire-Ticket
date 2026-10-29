@@ -42,19 +42,10 @@ export default async function DashboardPage() {
   const session = await auth();
   const user = session?.user as any;
 
-  // Fetch all comprehensive data in parallel
+  // Fetch all comprehensive data in parallel with optimized aggregations
   const [
-    totalTickets,
-    newTickets,
-    assignedTickets,
-    inProgressTickets,
-    pendingPartsTickets,
-    resolvedTickets,
-    closedTickets,
-    emergencyTickets,
-    highPriorityTickets,
-    mediumPriorityTickets,
-    lowPriorityTickets,
+    ticketStatusCounts,
+    ticketPriorityCounts,
 
     totalCustomers,
     recentCustomers,
@@ -63,11 +54,7 @@ export default async function DashboardPage() {
     needsServiceAssets,
     assetsByType,
 
-    totalInspections,
-    scheduledInspections,
-    inProgressInspections,
-    passedInspections,
-    failedInspections,
+    inspectionStatusCounts,
 
     totalInvoices,
     paidInvoicesSum,
@@ -85,20 +72,18 @@ export default async function DashboardPage() {
 
     synologyConfig,
   ] = await Promise.all([
-    // Ticket Statuses
-    prisma.ticket.count(),
-    prisma.ticket.count({ where: { status: "NEW" } }),
-    prisma.ticket.count({ where: { status: "ASSIGNED" } }),
-    prisma.ticket.count({ where: { status: "IN_PROGRESS" } }),
-    prisma.ticket.count({ where: { status: "PENDING_PARTS" } }),
-    prisma.ticket.count({ where: { status: "RESOLVED" } }),
-    prisma.ticket.count({ where: { status: "CLOSED" } }),
+    // Grouped Ticket Statuses
+    prisma.ticket.groupBy({
+      by: ["status"],
+      _count: { id: true },
+    }),
 
-    // Ticket Priorities (active)
-    prisma.ticket.count({ where: { priority: "EMERGENCY", status: { not: "CLOSED" } } }),
-    prisma.ticket.count({ where: { priority: "HIGH", status: { not: "CLOSED" } } }),
-    prisma.ticket.count({ where: { priority: "MEDIUM", status: { not: "CLOSED" } } }),
-    prisma.ticket.count({ where: { priority: "LOW", status: { not: "CLOSED" } } }),
+    // Grouped Active Ticket Priorities
+    prisma.ticket.groupBy({
+      by: ["priority"],
+      where: { status: { not: "CLOSED" } },
+      _count: { id: true },
+    }),
 
     // Customers
     prisma.customer.count({ where: { isActive: true } }),
@@ -116,12 +101,11 @@ export default async function DashboardPage() {
       _count: { id: true },
     }),
 
-    // Inspections
-    prisma.inspection.count(),
-    prisma.inspection.count({ where: { status: "SCHEDULED" } }),
-    prisma.inspection.count({ where: { status: "IN_PROGRESS" } }),
-    prisma.inspection.count({ where: { status: "PASSED" } }),
-    prisma.inspection.count({ where: { status: "FAILED" } }),
+    // Grouped Inspections
+    prisma.inspection.groupBy({
+      by: ["status"],
+      _count: { id: true },
+    }),
 
     // Invoices
     prisma.invoice.count(),
@@ -183,6 +167,28 @@ export default async function DashboardPage() {
     prisma.synologySyncConfig.findUnique({ where: { id: "default" } }),
   ]);
 
+  const ticketStatusMap = Object.fromEntries(ticketStatusCounts.map((c) => [c.status, c._count.id]));
+  const totalTickets = Object.values(ticketStatusMap).reduce((acc, curr) => acc + curr, 0);
+  const newTickets = ticketStatusMap["NEW"] || 0;
+  const assignedTickets = ticketStatusMap["ASSIGNED"] || 0;
+  const inProgressTickets = ticketStatusMap["IN_PROGRESS"] || 0;
+  const pendingPartsTickets = ticketStatusMap["PENDING_PARTS"] || 0;
+  const resolvedTickets = ticketStatusMap["RESOLVED"] || 0;
+  const closedTickets = ticketStatusMap["CLOSED"] || 0;
+
+  const ticketPriorityMap = Object.fromEntries(ticketPriorityCounts.map((c) => [c.priority, c._count.id]));
+  const emergencyTickets = ticketPriorityMap["EMERGENCY"] || 0;
+  const highPriorityTickets = ticketPriorityMap["HIGH"] || 0;
+  const mediumPriorityTickets = ticketPriorityMap["MEDIUM"] || 0;
+  const lowPriorityTickets = ticketPriorityMap["LOW"] || 0;
+
+  const inspectionStatusMap = Object.fromEntries(inspectionStatusCounts.map((c) => [c.status, c._count.id]));
+  const totalInspections = Object.values(inspectionStatusMap).reduce((acc, curr) => acc + curr, 0);
+  const scheduledInspections = inspectionStatusMap["SCHEDULED"] || 0;
+  const inProgressInspections = inspectionStatusMap["IN_PROGRESS"] || 0;
+  const passedInspections = inspectionStatusMap["PASSED"] || 0;
+  const failedInspections = inspectionStatusMap["FAILED"] || 0;
+
   const totalPaid = paidInvoicesSum._sum.total || 0;
   const totalPending = pendingInvoicesSum._sum.total || 0;
 
@@ -191,9 +197,9 @@ export default async function DashboardPage() {
   const inspectionPassRate = totalInspections > 0 ? Math.round((passedInspections / totalInspections) * 100) : 100;
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-3 sm:p-5 md:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       {/* ── 1. Top Header & Synology Sync Status Pill ────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white rounded-2xl p-6 shadow-md border border-gray-700">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-md border border-gray-700">
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
             <span className="text-xs font-semibold uppercase tracking-wider text-red-400 bg-red-950/80 border border-red-800 px-2.5 py-0.5 rounded-full flex items-center gap-1">
@@ -592,7 +598,7 @@ export default async function DashboardPage() {
               {recentTickets.length === 0 ? (
                 <p className="text-xs text-gray-400 p-8 text-center">No service tickets recorded yet.</p>
               ) : (
-                <table className="w-full text-xs">
+                <table className="w-full min-w-[600px] text-xs">
                   <thead>
                     <tr className="bg-gray-50/80 border-b border-gray-100 text-gray-600 font-semibold">
                       <th className="text-left px-4 py-2.5">Ticket #</th>
@@ -719,7 +725,7 @@ export default async function DashboardPage() {
               {recentInvoices.length === 0 ? (
                 <p className="text-xs text-gray-400 p-8 text-center">No invoices generated yet.</p>
               ) : (
-                <table className="w-full text-xs">
+                <table className="w-full min-w-[600px] text-xs">
                   <thead>
                     <tr className="bg-gray-50/80 border-b border-gray-100 text-gray-600 font-semibold">
                       <th className="text-left px-4 py-2.5">Invoice #</th>

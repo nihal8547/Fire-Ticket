@@ -41,12 +41,12 @@ export default function NewCustomerPage() {
   };
 
   return (
-    <div className="p-6 max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="p-3.5 sm:p-5 md:p-6 max-w-2xl mx-auto space-y-4">
+      <div className="flex items-center gap-3 mb-2 sm:mb-4">
         <Link href="/customers"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Add Customer</h1>
-          <p className="text-sm text-gray-500">Create a new customer account</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Add Customer</h1>
+          <p className="text-xs sm:text-sm text-gray-500">Create a new customer account</p>
         </div>
       </div>
 
@@ -54,9 +54,9 @@ export default function NewCustomerPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Card>
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Building2 className="h-4 w-4 text-red-500" />Company Information</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
+          <CardHeader className="pb-3"><CardTitle className="text-sm sm:text-base flex items-center gap-2"><Building2 className="h-4 w-4 text-red-500" />Company Information</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="sm:col-span-2">
               <Label>Company Name *</Label>
               <Input value={form.name} onChange={set("name")} placeholder="ABC Fire Safety Ltd" className="mt-1" required />
             </div>
@@ -68,7 +68,7 @@ export default function NewCustomerPage() {
               <Label>Phone</Label>
               <Input value={form.phone} onChange={set("phone")} placeholder="555-0100" className="mt-1" />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <Label>Contact Person</Label>
               <Input value={form.contactPerson} onChange={set("contactPerson")} placeholder="John Smith" className="mt-1" />
             </div>
@@ -76,9 +76,9 @@ export default function NewCustomerPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Site Address</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
+          <CardHeader className="pb-3"><CardTitle className="text-sm sm:text-base">Site Address</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="sm:col-span-2">
               <Label>Street Address</Label>
               <Input value={form.address} onChange={set("address")} placeholder="123 Main Street" className="mt-1" />
             </div>
@@ -98,22 +98,22 @@ export default function NewCustomerPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Additional Information</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
+          <CardHeader className="pb-3"><CardTitle className="text-sm sm:text-base">Additional Information</CardTitle></CardHeader>
+          <CardContent className="space-y-3 sm:space-y-4">
             <div>
               <Label>Site Details</Label>
-              <Textarea value={form.siteDetails} onChange={set("siteDetails")} placeholder="Building type, floors, special access..." className="mt-1" rows={3} />
+              <Textarea value={form.siteDetails} onChange={set("siteDetails")} placeholder="Building access codes, contact on site, parking..." className="mt-1" rows={3} />
             </div>
             <div>
-              <Label>Notes</Label>
-              <Textarea value={form.notes} onChange={set("notes")} placeholder="Internal notes..." className="mt-1" rows={2} />
+              <Label>Internal Notes</Label>
+              <Textarea value={form.notes} onChange={set("notes")} placeholder="Any billing or contract notes..." className="mt-1" rows={2} />
             </div>
           </CardContent>
         </Card>
 
-        <div className="flex gap-3 justify-end">
-          <Link href="/customers"><Button variant="outline">Cancel</Button></Link>
-          <Button type="submit" disabled={loading}>{loading ? "Creating..." : "Create Customer"}</Button>
+        <div className="flex gap-3 justify-end pt-2">
+          <Link href="/customers"><Button variant="outline" size="sm">Cancel</Button></Link>
+          <Button type="submit" size="sm" className="bg-red-600 hover:bg-red-700 text-white" disabled={loading}>{loading ? "Saving..." : "Create Customer"}</Button>
         </div>
       </form>
     </div>

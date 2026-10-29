@@ -51,6 +51,11 @@ model Customer {
   assets         Asset[]
   inspections    Inspection[]
   invoices       Invoice[]
+
+  @@index([name])
+  @@index([phone])
+  @@index([createdAt])
+  @@index([isActive])
 }
 
 model ServiceType {
@@ -108,6 +113,15 @@ model Ticket {
   auditLogs     AuditLog[]
   invoiceItems  InvoiceItem[]
   inspections   Inspection[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([customerId])
+  @@index([technicianId])
+  @@index([createdAt])
+  @@index([scheduledDate])
+  @@index([status, priority])
+  @@index([status, createdAt])
 }
 
 model TicketComment {
@@ -157,6 +171,10 @@ model Asset {
   customer        Customer  @relation(fields: [customerId], references: [id])
 
   inspectionItems InspectionItem[]
+
+  @@index([status])
+  @@index([assetType])
+  @@index([customerId])
 }
 
 model Inspection {
@@ -183,6 +201,11 @@ model Inspection {
   serviceType   ServiceType? @relation(fields: [serviceTypeId], references: [id])
 
   items         InspectionItem[]
+
+  @@index([status])
+  @@index([customerId])
+  @@index([scheduledDate])
+  @@index([createdAt])
 }
 
 model InspectionItem {
@@ -218,6 +241,11 @@ model Invoice {
   customer      Customer  @relation(fields: [customerId], references: [id])
 
   items         InvoiceItem[]
+
+  @@index([status])
+  @@index([customerId])
+  @@index([createdAt])
+  @@index([dueDate])
 }
 
 model InvoiceItem {

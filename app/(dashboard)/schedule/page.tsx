@@ -71,73 +71,79 @@ export default function SchedulePage() {
   const isToday = (day: number) => today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="p-3.5 sm:p-5 md:p-6 space-y-4 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Schedule</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Tickets and inspections calendar</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Schedule</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">Tickets and inspections calendar</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={goToday}>Today</Button>
-          <Button variant="ghost" size="icon" onClick={prevMonth}><ChevronLeft className="h-4 w-4" /></Button>
-          <span className="text-base font-semibold w-36 text-center">{MONTHS[month]} {year}</span>
-          <Button variant="ghost" size="icon" onClick={nextMonth}><ChevronRight className="h-4 w-4" /></Button>
+        <div className="flex items-center justify-between sm:justify-end gap-2 bg-white sm:bg-transparent p-1.5 sm:p-0 rounded-lg border sm:border-0 shadow-2xs sm:shadow-none">
+          <Button variant="outline" size="sm" onClick={goToday} className="text-xs h-8">Today</Button>
+          <div className="flex items-center">
+            <Button variant="ghost" size="icon" onClick={prevMonth} className="h-8 w-8"><ChevronLeft className="h-4 w-4" /></Button>
+            <span className="text-xs sm:text-sm font-semibold w-28 sm:w-36 text-center">{MONTHS[month]} {year}</span>
+            <Button variant="ghost" size="icon" onClick={nextMonth} className="h-8 w-8"><ChevronRight className="h-4 w-4" /></Button>
+          </div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        {/* Day headers */}
-        <div className="grid grid-cols-7 border-b border-gray-200">
-          {DAYS.map(d => (
-            <div key={d} className="px-3 py-2 text-center text-xs font-semibold text-gray-500 bg-gray-50">{d}</div>
-          ))}
-        </div>
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-2xs">
+        <div className="overflow-x-auto">
+          <div className="min-w-[620px]">
+            {/* Day headers */}
+            <div className="grid grid-cols-7 border-b border-gray-200">
+              {DAYS.map(d => (
+                <div key={d} className="px-3 py-2 text-center text-xs font-semibold text-gray-500 bg-gray-50">{d}</div>
+              ))}
+            </div>
 
-        {/* Calendar cells */}
-        {loading ? (
-          <div className="py-20 text-center text-gray-500">Loading schedule...</div>
-        ) : (
-          <div className="grid grid-cols-7">
-            {cells.map((day, i) => {
-              if (!day) return <div key={i} className="min-h-[120px] bg-gray-50/50 border-r border-b border-gray-100" />;
-              const { dayTickets, dayInspections } = getItemsForDay(day);
-              const total = dayTickets.length + dayInspections.length;
-              return (
-                <div key={i} className={`min-h-[120px] p-2 border-r border-b border-gray-100 ${isToday(day) ? "bg-red-50" : "hover:bg-gray-50"}`}>
-                  <div className={`text-sm font-medium mb-1 h-6 w-6 flex items-center justify-center rounded-full ${isToday(day) ? "bg-red-600 text-white" : "text-gray-700"}`}>
-                    {day}
-                  </div>
-                  <div className="space-y-1">
-                    {dayTickets.slice(0, 2).map((t: any) => (
-                      <Link key={t.id} href={`/tickets/${t.id}`}>
-                        <div className={`text-xs px-1.5 py-0.5 rounded truncate cursor-pointer ${PRIORITY_COLOR[t.priority] || "bg-gray-200 text-gray-700"}`}>
-                          {t.title}
-                        </div>
-                      </Link>
-                    ))}
-                    {dayInspections.slice(0, 1).map((ins: any) => (
-                      <div key={ins.id} className="text-xs px-1.5 py-0.5 rounded truncate bg-purple-100 text-purple-800">
-                        INS: {ins.customer?.name || ins.inspectionNumber}
+            {/* Calendar cells */}
+            {loading ? (
+              <div className="py-20 text-center text-gray-500 text-xs sm:text-sm">Loading schedule...</div>
+            ) : (
+              <div className="grid grid-cols-7">
+                {cells.map((day, i) => {
+                  if (!day) return <div key={i} className="min-h-[110px] bg-gray-50/50 border-r border-b border-gray-100" />;
+                  const { dayTickets, dayInspections } = getItemsForDay(day);
+                  const total = dayTickets.length + dayInspections.length;
+                  return (
+                    <div key={i} className={`min-h-[110px] p-2 border-r border-b border-gray-100 ${isToday(day) ? "bg-red-50/70" : "hover:bg-gray-50/50"}`}>
+                      <div className={`text-xs font-semibold mb-1 h-5 w-5 flex items-center justify-center rounded-full ${isToday(day) ? "bg-red-600 text-white" : "text-gray-700"}`}>
+                        {day}
                       </div>
-                    ))}
-                    {total > 3 && (
-                      <div className="text-xs text-gray-500 px-1">+{total - 3} more</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                      <div className="space-y-1">
+                        {dayTickets.slice(0, 2).map((t: any) => (
+                          <Link key={t.id} href={`/tickets/${t.id}`}>
+                            <div className={`text-[10px] px-1.5 py-0.5 rounded truncate cursor-pointer ${PRIORITY_COLOR[t.priority] || "bg-gray-200 text-gray-700"}`}>
+                              {t.title}
+                            </div>
+                          </Link>
+                        ))}
+                        {dayInspections.slice(0, 1).map((ins: any) => (
+                          <div key={ins.id} className="text-[10px] px-1.5 py-0.5 rounded truncate bg-purple-100 text-purple-800">
+                            INS: {ins.customer?.name || ins.inspectionNumber}
+                          </div>
+                        ))}
+                        {total > 3 && (
+                          <div className="text-[10px] text-gray-500 px-1 font-medium">+{total - 3} more</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Legend */}
-      <div className="flex gap-4 flex-wrap text-xs text-gray-600">
-        <span className="font-medium">Priority:</span>
+      <div className="flex gap-2 sm:gap-4 flex-wrap text-xs text-gray-600 items-center">
+        <span className="font-medium text-[11px] sm:text-xs">Priority:</span>
         {Object.entries(PRIORITY_COLOR).map(([k, v]) => (
-          <span key={k} className={`px-2 py-0.5 rounded ${v}`}>{k}</span>
+          <span key={k} className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium ${v}`}>{k}</span>
         ))}
-        <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-800">Inspection</span>
+        <span className="px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium bg-purple-100 text-purple-800">Inspection</span>
       </div>
     </div>
   );

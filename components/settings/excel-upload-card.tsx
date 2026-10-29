@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import * as XLSX from "xlsx";
 import {
   FileSpreadsheet,
   Upload,
@@ -23,6 +22,11 @@ import {
   CheckSquare,
   Square,
   ShieldCheck,
+  SlidersHorizontal,
+  AlertTriangle,
+  RotateCcw,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,9 +39,159 @@ interface SheetInfo {
   selected: boolean;
 }
 
+interface FieldDef {
+  key: string;
+  label: string;
+  required?: boolean;
+  hint: string;
+  category: "ticket" | "inspection" | "all";
+  aliases: string[];
+}
+
+const SYSTEM_FIELDS: FieldDef[] = [
+  {
+    key: "clientName",
+    label: "Client / Customer Name",
+    required: true,
+    hint: "Required. Creates client if not found in database",
+    category: "all",
+    aliases: ["client name", "customer name", "client", "customer", "company"],
+  },
+  {
+    key: "ticketNumber",
+    label: "Visit Ref # / Ticket #",
+    hint: "Identifier like ADM-SV-01, TKT-001 (used to prevent duplicates)",
+    category: "ticket",
+    aliases: ["visit ref #", "visit ref", "visitref#", "ticket #", "ticketno", "ticket number", "ticket id", "ticket"],
+  },
+  {
+    key: "date",
+    label: "Date",
+    hint: "Visit date, inspection date, or date raised",
+    category: "all",
+    aliases: ["date", "date raised", "inspection date", "scheduled date", "raised date"],
+  },
+  {
+    key: "siteLocation",
+    label: "Site / Location",
+    hint: "Site address, building, or location details",
+    category: "ticket",
+    aliases: ["site / location", "site/location", "site", "location", "address"],
+  },
+  {
+    key: "purpose",
+    label: "Purpose of Visit / Service Type",
+    hint: "Survey, Inspection, PPM, Repair, etc.",
+    category: "ticket",
+    aliases: ["purpose of visit", "purpose", "request type", "service type", "service"],
+  },
+  {
+    key: "system",
+    label: "Fire System / Equipment",
+    hint: "Fire Alarm, Sprinkler, Pumps, FM200, Multiple",
+    category: "ticket",
+    aliases: ["system", "fire system", "equipment"],
+  },
+  {
+    key: "engineer",
+    label: "Assigned Engineer / Inspector",
+    hint: "Assigned technician or lead engineer",
+    category: "all",
+    aliases: ["engineer", "assigned engineer", "technician", "assigned technician", "inspector", "assigned to"],
+  },
+  {
+    key: "team",
+    label: "Team / Technicians",
+    hint: "Assisting technician(s)",
+    category: "ticket",
+    aliases: ["team / technicians", "team", "technicians", "team/technicians"],
+  },
+  {
+    key: "timeIn",
+    label: "Time In",
+    hint: "Arrival time, e.g. 11:00 AM",
+    category: "ticket",
+    aliases: ["time in", "timein"],
+  },
+  {
+    key: "timeOut",
+    label: "Time Out",
+    hint: "Departure time, e.g. 12:30 PM",
+    category: "ticket",
+    aliases: ["time out", "timeout"],
+  },
+  {
+    key: "hoursOnSite",
+    label: "Hours on Site",
+    hint: "Duration in hours, e.g. 1.5",
+    category: "ticket",
+    aliases: ["hours on site", "hours", "duration"],
+  },
+  {
+    key: "workDone",
+    label: "Work Done / Findings",
+    hint: "Field notes & work performed description",
+    category: "ticket",
+    aliases: ["work done / findings", "work done", "findings", "last update", "description", "details"],
+  },
+  {
+    key: "nextAction",
+    label: "Next Action / Remarks",
+    hint: "Follow-up items, quotation, remarks",
+    category: "ticket",
+    aliases: ["next action / remarks", "next action", "remarks", "notes"],
+  },
+  {
+    key: "status",
+    label: "Status",
+    hint: "Completed, In Progress, Pending Parts, Scheduled",
+    category: "all",
+    aliases: ["status", "ticket status", "inspection status"],
+  },
+  {
+    key: "result",
+    label: "Inspection Result (Pass/Fail/N-A)",
+    hint: "QCDD result: Pass, Fail, or N/A",
+    category: "inspection",
+    aliases: ["result (pass/fail/n-a)", "result", "overall result", "pass/fail", "result (pass/fail)"],
+  },
+  {
+    key: "inspectionNumber",
+    label: "Inspection Ref #",
+    hint: "QCDD Inspection reference number",
+    category: "inspection",
+    aliases: ["inspection #", "inspection number", "inspectionno", "qcdd ref #"],
+  },
+  {
+    key: "type",
+    label: "Type / Category / Priority",
+    hint: "Pre-QCDD Check, Inspection, Emergency, Complaint",
+    category: "all",
+    aliases: ["type (pre-qcdd check/inspection)", "type (emergency/complaint/request)", "type", "priority"],
+  },
+  {
+    key: "linkedTicket",
+    label: "Linked Ticket / RFQ / Job #",
+    hint: "Cross-reference ticket or job code",
+    category: "ticket",
+    aliases: ["linked ticket / rfq / job #", "linked ticket", "job #", "rfq #"],
+  },
+  {
+    key: "customerEmail",
+    label: "Customer Email",
+    hint: "Contact email address",
+    category: "all",
+    aliases: ["customer email", "email", "client email"],
+  },
+];
+
 export function ExcelUploadCard() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [detectedSheets, setDetectedSheets] = useState<SheetInfo[]>([]);
+  const [excelHeaders, setExcelHeaders] = useState<string[]>([]);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+  const [showMappingPanel, setShowMappingPanel] = useState(false);
+  const [filterCategory, setFilterCategory] = useState<"all" | "ticket" | "inspection">("all");
   const [parsingWorkbook, setParsingWorkbook] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -68,53 +222,46 @@ export function ExcelUploadCard() {
   const inspectFileSheets = async (file: File) => {
     setParsingWorkbook(true);
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const wb = XLSX.read(arrayBuffer, { type: "array" });
-      const sheets: SheetInfo[] = [];
-
-      for (const name of wb.SheetNames) {
-        const sheet = wb.Sheets[name];
-        const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-        const rowCount = rows.length;
-
-        let detectedType: SheetInfo["detectedType"] = "Support Tickets";
-        if (rowCount > 0) {
-          const sNameLower = name.toLowerCase().replace(/[^a-z0-9]/g, "");
-          const keys = Object.keys(rows[0] || {}).map((k) => k.toLowerCase().replace(/[^a-z0-9]/g, ""));
-
-          if (
-            sNameLower.includes("qcdd") ||
-            sNameLower.includes("inspect") ||
-            keys.some((k) => k.includes("qcdd") || k.includes("passfail") || k.includes("result") || k.includes("preqcdd"))
-          ) {
-            detectedType = "Pre-QCDD Checks";
-          } else if (
-            sNameLower.includes("visit") ||
-            keys.some((k) => k.includes("visitref") || k.includes("hoursonsite") || k.includes("timein") || k.includes("workdone"))
-          ) {
-            detectedType = "Site Visits";
-          } else if (
-            sNameLower.includes("customer") ||
-            sNameLower.includes("client") ||
-            (keys.some((k) => k.includes("contactperson") || k.includes("zipcode")) &&
-              !keys.some((k) => k.includes("ticket") || k.includes("visit") || k.includes("purpose")))
-          ) {
-            detectedType = "Customers";
-          }
-        }
-
-        sheets.push({
-          name,
-          rowCount,
-          detectedType,
-          selected: rowCount > 0 || wb.SheetNames.length === 1,
-        });
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/excel/inspect", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to inspect Excel file on backend");
       }
 
+      const allHeaders: string[] = data.headers || [];
+      const sheets: SheetInfo[] = data.sheets || [];
+      const suggestedMapping: Record<string, string> = data.suggestedMapping || {};
+
+      setExcelHeaders(allHeaders);
       setDetectedSheets(sheets);
+
+      // Build mapping with default empty strings for unmatched fields
+      const fullMapping: Record<string, string> = {};
+      const matchedHeaders = new Set<string>();
+
+      for (const field of SYSTEM_FIELDS) {
+        if (suggestedMapping[field.key]) {
+          fullMapping[field.key] = suggestedMapping[field.key];
+          matchedHeaders.add(suggestedMapping[field.key]);
+        } else {
+          fullMapping[field.key] = "";
+        }
+      }
+
+      setColumnMapping(fullMapping);
+
+      // If there are unmapped headers, expand the mapping panel automatically
+      const unmapped = allHeaders.filter((h) => !matchedHeaders.has(h));
+      if (unmapped.length > 0) {
+        setShowMappingPanel(true);
+      }
     } catch (err) {
-      console.error("Failed to inspect workbook sheets:", err);
+      console.error("Backend Excel inspection error:", err);
       setDetectedSheets([]);
+      setExcelHeaders([]);
+      setColumnMapping({});
     } finally {
       setParsingWorkbook(false);
     }
@@ -151,6 +298,18 @@ export function ExcelUploadCard() {
     }
   };
 
+  const handleResetMapping = () => {
+    const autoMapping: Record<string, string> = {};
+    for (const field of SYSTEM_FIELDS) {
+      const match = excelHeaders.find((h) => {
+        const hNorm = h.toLowerCase().replace(/[^a-z0-9]/g, "");
+        return field.aliases.some((a) => a.toLowerCase().replace(/[^a-z0-9]/g, "") === hNorm);
+      });
+      autoMapping[field.key] = match || "";
+    }
+    setColumnMapping(autoMapping);
+  };
+
   const handleUpload = async () => {
     if (!selectedFile) return;
     setUploading(true);
@@ -159,11 +318,14 @@ export function ExcelUploadCard() {
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
-      
+
       const selectedNames = detectedSheets.filter((s) => s.selected).map((s) => s.name);
       if (selectedNames.length > 0) {
         formData.append("sheets", JSON.stringify(selectedNames));
       }
+
+      // Pass user-configured column mapping
+      formData.append("mapping", JSON.stringify(columnMapping));
 
       const res = await fetch("/api/excel/import", {
         method: "POST",
@@ -187,6 +349,15 @@ export function ExcelUploadCard() {
 
   const selectedCount = detectedSheets.filter((s) => s.selected).length;
 
+  // Compute mapped vs unmapped headers in uploaded file
+  const mappedExcelCols = new Set(Object.values(columnMapping).filter((v) => v && v !== "__skip__"));
+  const unmappedExcelCols = excelHeaders.filter((h) => !mappedExcelCols.has(h));
+
+  const filteredFields = SYSTEM_FIELDS.filter((f) => {
+    if (filterCategory === "all") return true;
+    return f.category === filterCategory || f.category === "all";
+  });
+
   return (
     <div className="space-y-6">
       {/* Main Upload Card */}
@@ -196,10 +367,10 @@ export function ExcelUploadCard() {
             <div>
               <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
                 <FileSpreadsheet className="h-5 w-5 text-green-600" />
-                Excel Multi-Page Auto-Sync (Site Visits, QCDD Checks & Tickets)
+                Excel Auto-Sync with Manual Column Configuration
               </CardTitle>
               <p className="text-xs text-gray-500 mt-1">
-                Upload spreadsheets to fetch from <b>single or multiple pages (sheets)</b> simultaneously into FireTicket.
+                Upload spreadsheets to auto-sync Site Visits, Pre-QCDD Checks, and Tickets. Supports <b>custom column mapping</b> and <b>multiple pages</b>.
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -221,7 +392,7 @@ export function ExcelUploadCard() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-blue-100 pb-2.5">
               <span className="text-xs font-semibold text-blue-900 flex items-center gap-1.5">
                 <Sparkles className="h-3.5 w-3.5 text-blue-600" />
-                Supported Excel Column Formats (Auto-Detected across all pages)
+                Standard Column Formats (Auto-Mapped or Custom-Configurable)
               </span>
 
               {/* Sub-tabs for previewing columns */}
@@ -439,7 +610,7 @@ export function ExcelUploadCard() {
                 <div>
                   <p className="text-sm font-semibold text-gray-900">{selectedFile.name}</p>
                   <p className="text-xs text-gray-500">
-                    {(selectedFile.size / 1024).toFixed(1)} KB · {detectedSheets.length} page(s) detected
+                    {(selectedFile.size / 1024).toFixed(1)} KB · {detectedSheets.length} page(s) · {excelHeaders.length} columns found
                   </p>
                 </div>
                 <p className="text-xs text-blue-600 font-medium pt-1">
@@ -455,7 +626,7 @@ export function ExcelUploadCard() {
                     <span className="text-red-600 hover:underline">browse</span>
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Supports multiple pages / sheets in the same Excel file (.xlsx)
+                    Supports any column names (auto-detects or manually maps them)
                   </p>
                 </div>
               </div>
@@ -543,6 +714,186 @@ export function ExcelUploadCard() {
             </div>
           )}
 
+          {/* MANUAL COLUMN CONFIGURATION / FIELD MAPPER */}
+          {selectedFile && excelHeaders.length > 0 && (
+            <div className="rounded-xl border border-gray-200 bg-white shadow-xs overflow-hidden">
+              <div
+                onClick={() => setShowMappingPanel(!showMappingPanel)}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 bg-gray-50/80 cursor-pointer hover:bg-gray-100/70 border-b border-gray-200 transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <SlidersHorizontal className="h-4 w-4 text-red-600 shrink-0" />
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-900 flex items-center gap-2">
+                      Configure & Map Excel Columns
+                      {unmappedExcelCols.length > 0 ? (
+                        <span className="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-semibold border border-amber-200 flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {unmappedExcelCols.length} Unmapped Columns
+                        </span>
+                      ) : (
+                        <span className="bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded-full font-semibold border border-green-200 flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          All Columns Auto-Mapped
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Match columns from your uploaded Excel sheet to FireTicket system fields.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center">
+                  <span className="text-[11px] text-gray-600 font-medium">
+                    {showMappingPanel ? "Collapse Mapping" : "Customize / View Mapping"}
+                  </span>
+                  {showMappingPanel ? (
+                    <ChevronUp className="h-4 w-4 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-gray-500" />
+                  )}
+                </div>
+              </div>
+
+              {showMappingPanel && (
+                <div className="p-4 space-y-4">
+                  {/* Alert if unmapped columns exist */}
+                  {unmappedExcelCols.length > 0 && (
+                    <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 space-y-1.5">
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                        Unmapped Excel Columns Found:
+                      </div>
+                      <p className="text-[11px] text-amber-800">
+                        The following columns from your Excel file were not automatically recognized. You can assign them to any field below:
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {unmappedExcelCols.map((col, idx) => (
+                          <span
+                            key={idx}
+                            className="bg-white border border-amber-300 text-amber-900 px-2 py-0.5 rounded font-mono font-medium text-[11px] shadow-2xs"
+                          >
+                            {col}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Filter tabs and Reset button */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3">
+                    <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setFilterCategory("all")}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                          filterCategory === "all" ? "bg-white text-gray-900 shadow-2xs" : "text-gray-600 hover:text-gray-900"
+                        }`}
+                      >
+                        All Fields ({SYSTEM_FIELDS.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFilterCategory("ticket")}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                          filterCategory === "ticket" ? "bg-white text-gray-900 shadow-2xs" : "text-gray-600 hover:text-gray-900"
+                        }`}
+                      >
+                        Site Visits & Tickets
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFilterCategory("inspection")}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                          filterCategory === "inspection" ? "bg-white text-gray-900 shadow-2xs" : "text-gray-600 hover:text-gray-900"
+                        }`}
+                      >
+                        Pre-QCDD Checks
+                      </button>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResetMapping}
+                      className="text-xs h-7 gap-1.5 text-gray-600 hover:text-gray-900"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Reset to Auto-Detect
+                    </Button>
+                  </div>
+
+                  {/* Column Mapping Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
+                    {filteredFields.map((field) => {
+                      const currentVal = columnMapping[field.key] || "";
+                      const isMapped = currentVal && currentVal !== "__skip__";
+                      const isSkipped = currentVal === "__skip__";
+
+                      return (
+                        <div
+                          key={field.key}
+                          className={`p-3 rounded-lg border transition-all ${
+                            isMapped
+                              ? "bg-blue-50/30 border-blue-200"
+                              : isSkipped
+                              ? "bg-gray-50/60 border-gray-200 opacity-60"
+                              : "bg-white border-gray-200"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <div>
+                              <p className="text-xs font-bold text-gray-900 flex items-center gap-1">
+                                {field.label}
+                                {field.required && <span className="text-red-500 font-bold">*</span>}
+                              </p>
+                              <p className="text-[10px] text-gray-500 leading-tight">{field.hint}</p>
+                            </div>
+                            {isMapped ? (
+                              <Badge variant="outline" className="text-[9px] bg-blue-100 text-blue-800 border-blue-300">
+                                Mapped
+                              </Badge>
+                            ) : isSkipped ? (
+                              <Badge variant="outline" className="text-[9px] bg-gray-100 text-gray-600 border-gray-300">
+                                Skipped
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[9px] text-gray-400">
+                                Auto
+                              </Badge>
+                            )}
+                          </div>
+
+                          <select
+                            value={currentVal}
+                            onChange={(e) => {
+                              setColumnMapping({
+                                ...columnMapping,
+                                [field.key]: e.target.value,
+                              });
+                            }}
+                            className="w-full text-xs rounded-md border border-gray-300 bg-white px-2.5 py-1.5 font-medium text-gray-800 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                          >
+                            <option value="">(Auto-Detect / Default)</option>
+                            <option value="__skip__">❌ (Skip / Do Not Import)</option>
+                            <optgroup label="Excel Columns in Uploaded File:">
+                              {excelHeaders.map((header, hIdx) => (
+                                <option key={hIdx} value={header}>
+                                  Excel Column: {header}
+                                </option>
+                              ))}
+                            </optgroup>
+                          </select>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
             <div className="text-xs text-gray-500">
@@ -564,6 +915,8 @@ export function ExcelUploadCard() {
                   onClick={() => {
                     setSelectedFile(null);
                     setDetectedSheets([]);
+                    setExcelHeaders([]);
+                    setColumnMapping({});
                     setResult(null);
                   }}
                   disabled={uploading}
@@ -663,7 +1016,8 @@ export function ExcelUploadCard() {
                     Sheet-by-Sheet / Page Breakdown:
                   </p>
                   <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-2xs">
-                    <table className="w-full text-xs">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[500px] text-xs">
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-100 text-gray-600 font-semibold">
                           <th className="text-left px-3 py-2">Page / Sheet</th>
@@ -717,6 +1071,7 @@ export function ExcelUploadCard() {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </div>
               )}
@@ -726,7 +1081,8 @@ export function ExcelUploadCard() {
                 <div className="space-y-1.5 pt-1">
                   <p className="text-xs font-semibold text-gray-700">Processed Records (Recent):</p>
                   <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-2xs">
-                    <table className="w-full text-xs">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[500px] text-xs">
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 font-semibold">
                           <th className="text-left px-3 py-1.5">Ref #</th>
@@ -762,6 +1118,7 @@ export function ExcelUploadCard() {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </div>
               )}

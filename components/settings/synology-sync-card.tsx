@@ -414,7 +414,8 @@ export function SynologySyncCard() {
             </div>
           ) : (
             <div className="rounded-lg border border-gray-200 overflow-hidden">
-              <table className="w-full text-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[550px] text-xs">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="text-left px-3 py-2 font-medium text-gray-600">Date & Time</th>
@@ -456,6 +457,7 @@ export function SynologySyncCard() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </div>

@@ -104,20 +104,22 @@ export default function InspectionsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3.5 sm:p-5 md:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Inspections</h1>
           <p className="text-sm text-gray-500 mt-0.5">{total} total inspections</p>
         </div>
         <Link href="/inspections/new">
-          <Button className="gap-2"><Plus className="h-4 w-4" /> Schedule Inspection</Button>
+          <Button size="sm" className="gap-2 text-xs bg-red-600 hover:bg-red-700 text-white">
+            <Plus className="h-4 w-4" /> Schedule Inspection
+          </Button>
         </Link>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-44 h-9 text-xs bg-white">
             <Filter className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
@@ -130,93 +132,95 @@ export default function InspectionsPage() {
         </Select>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Inspection #</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Customer</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Type</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Scheduled</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Status</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Result</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-600">Certificate</th>
-              <th className="text-right px-6 py-3 font-medium text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
-              <tr><td colSpan={8} className="text-center py-12 text-gray-500">Loading...</td></tr>
-            ) : inspections.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="text-center py-16">
-                  <ClipboardCheck className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500">No inspections scheduled yet</p>
-                  <Link href="/inspections/new" className="mt-2 inline-block">
-                    <Button size="sm" className="mt-2">Schedule First Inspection</Button>
-                  </Link>
-                </td>
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-2xs">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[700px] text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50 text-xs">
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Inspection #</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Customer</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Type</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Scheduled</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Status</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Result</th>
+                <th className="text-left px-4 sm:px-6 py-3 font-semibold text-gray-600">Certificate</th>
+                <th className="text-right px-4 sm:px-6 py-3 font-semibold text-gray-600">Actions</th>
               </tr>
-            ) : (
-              inspections.map((ins) => {
-                const statusInfo = INSPECTION_STATUS[ins.status] || { label: ins.status, color: "bg-gray-100 text-gray-700" };
-                return (
-                  <tr key={ins.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <span className="font-mono text-xs text-gray-600">{ins.inspectionNumber}</span>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">{ins.customer?.name}</td>
-                    <td className="px-6 py-4 text-gray-700">{ins.type}</td>
-                    <td className="px-6 py-4 text-gray-700">{formatDate(ins.scheduledDate)}</td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusInfo.color}`}>
-                        {statusInfo.label}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {ins.overallResult && (
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          ins.overallResult === "PASS" ? "bg-green-100 text-green-800" :
-                          ins.overallResult === "FAIL" ? "bg-red-100 text-red-800" :
-                          "bg-yellow-100 text-yellow-800"
-                        }`}>{ins.overallResult}</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {ins.certExpiry && (
-                        <span className="text-xs text-gray-600">
-                          Expires: {formatDate(ins.certExpiry)}
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr><td colSpan={8} className="text-center py-12 text-gray-500">Loading...</td></tr>
+              ) : inspections.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-16">
+                    <ClipboardCheck className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500">No inspections scheduled yet</p>
+                    <Link href="/inspections/new" className="mt-2 inline-block">
+                      <Button size="sm" className="mt-2 bg-red-600 hover:bg-red-700 text-white">Schedule First Inspection</Button>
+                    </Link>
+                  </td>
+                </tr>
+              ) : (
+                inspections.map((ins) => {
+                  const statusInfo = INSPECTION_STATUS[ins.status] || { label: ins.status, color: "bg-gray-100 text-gray-700" };
+                  return (
+                    <tr key={ins.id} className="hover:bg-gray-50">
+                      <td className="px-4 sm:px-6 py-3.5">
+                        <span className="font-mono text-xs font-semibold text-gray-900">{ins.inspectionNumber}</span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3.5 font-medium text-gray-900">{ins.customer?.name}</td>
+                      <td className="px-4 sm:px-6 py-3.5 text-gray-700 text-xs">{ins.type}</td>
+                      <td className="px-4 sm:px-6 py-3.5 text-gray-700 text-xs">{formatDate(ins.scheduledDate)}</td>
+                      <td className="px-4 sm:px-6 py-3.5">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusInfo.color}`}>
+                          {statusInfo.label}
                         </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEdit(ins)}
-                          className="h-8 px-2 gap-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          title="Edit inspection"
-                        >
-                          <Edit className="h-3.5 w-3.5" /> Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteInspection(ins.id, ins.inspectionNumber)}
-                          className="h-8 px-2 gap-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
-                          title="Delete inspection"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" /> Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3.5">
+                        {ins.overallResult && (
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            ins.overallResult === "PASS" ? "bg-green-100 text-green-800" :
+                            ins.overallResult === "FAIL" ? "bg-red-100 text-red-800" :
+                            "bg-yellow-100 text-yellow-800"
+                          }`}>{ins.overallResult}</span>
+                        )}
+                      </td>
+                      <td className="px-4 sm:px-6 py-3.5">
+                        {ins.certExpiry && (
+                          <span className="text-xs text-gray-600 font-mono">
+                            Expires: {formatDate(ins.certExpiry)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 sm:px-6 py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEdit(ins)}
+                            className="h-8 px-2 gap-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            title="Edit inspection"
+                          >
+                            <Edit className="h-3.5 w-3.5" /> Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteInspection(ins.id, ins.inspectionNumber)}
+                            className="h-8 px-2 gap-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Delete inspection"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Edit Inspection Dialog */}
@@ -276,8 +280,8 @@ export default function InspectionsPage() {
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={saving}>
+              <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={handleSave} disabled={saving}>
                 {saving ? "Saving..." : "Save Changes"}
               </Button>
             </div>
